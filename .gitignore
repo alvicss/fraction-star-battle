@@ -1,0 +1,12 @@
+# Claude Code 設定目錄
+.claude/
+
+# 作業系統產生的暫存檔
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 編輯器暫存檔
+*.swp
+*.swo
+*~
