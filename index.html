@@ -256,7 +256,18 @@ body {
   align-items: stretch;
 }
 
-/* 左側怪獸面板 */
+/* 左側玩家面板（新）*/
+.player-panel {
+  flex: 0 0 90px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px;
+  background: rgba(78,205,196,.07); border: 1px solid rgba(78,205,196,.18);
+  border-radius: var(--radius); padding: 10px 6px; text-align: center;
+}
+.player-panel .char-img  { width: 100%; max-width: 52px; height: auto; border-radius: 8px; object-fit: contain; }
+.player-panel .player-emoji { font-size: 2.2rem; }
+
+/* 右側怪獸面板 */
 .monster-panel {
   flex: 0 0 90px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -488,28 +499,25 @@ body {
   /* 按鈕列間距加大 */
   .btn-row { gap: 12px; }
 
-  /* 怪獸面板稍微拉寬 */
+  /* 怪獸 / 玩家面板拉寬 */
   .monster-panel { flex: 0 0 120px; }
+  .player-panel  { flex: 0 0 120px; }
   .monster-emoji { font-size: 3rem; }
   .monster-name  { font-size: 1rem; }
   .monster-dialog { font-size: .78rem; }
+  .player-panel .player-emoji { font-size: 3rem; }
+  .player-panel .char-img     { max-width: 80px; }
 
   /* 手牌卡片放大 */
   .card { min-width: 88px; min-height: 110px; }
 
-  /* 底部手牌區增加角色圖區域後的間距 */
+  /* 底部手牌區 */
   .battle-bottom { padding: 14px 24px; }
   .hand-label    { font-size: .82rem; margin-bottom: 10px; }
   .player-hand   { gap: 12px; }
 
   /* 等式列間距加大 */
   .equation-row  { gap: 14px; }
-
-  /* 平板版角色圖放大 */
-  .player-char-wrap { flex: 0 0 80px; gap: 4px; }
-  .player-emoji     { font-size: 2.8rem; }
-  .player-char-name { font-size: .65rem; }
-  .char-img         { max-width: 76px; }
 
   /* 怪獸面板角色圖 */
   .monster-panel .char-img { max-width: 80px; }
@@ -519,17 +527,15 @@ body {
    RWD — 桌機（≥ 960px）：怪獸面板 +200px、玩家圖片加高
    ============================================================ */
 @media (min-width: 960px) {
-  /* 怪獸面板：768px 時 120px，桌機再 +200px = 320px */
+  /* 怪獸 / 玩家面板桌機版放大 */
   .monster-panel  { flex: 0 0 320px; padding: 16px 14px; }
+  .player-panel   { flex: 0 0 320px; padding: 16px 14px; }
   .monster-emoji  { font-size: 5rem; }
   .monster-name   { font-size: 1.2rem; }
   .monster-dialog { font-size: .88rem; line-height: 1.5; }
-  .monster-panel .char-img { max-width: 240px; }
-
-  /* 玩家圖框高度增加（約 +60px）：加寬 flex-basis 讓圖片等比放大 */
-  .player-char-wrap { flex: 0 0 120px; }
-  .player-char-wrap .char-img { max-width: 110px; }
-  .player-emoji { font-size: 4rem; }
+  .monster-panel .char-img    { max-width: 240px; }
+  .player-panel .player-emoji { font-size: 5rem; }
+  .player-panel .char-img     { max-width: 240px; }
 }
 
 /* ============================================================
@@ -537,6 +543,7 @@ body {
    ============================================================ */
 @media (max-width: 430px) {
   .monster-panel { flex: 0 0 76px; }
+  .player-panel  { flex: 0 0 76px; }
   .card          { min-width: 60px; min-height: 78px; }
   .eq-slot       { min-width: 62px; min-height: 80px; }
   .ans-input-w, .ans-input-n, .ans-input-d { width: 46px; height: 45px; font-size: 1rem; }
@@ -683,28 +690,38 @@ body {
      ============================================================ -->
 <div class="screen" id="screenBattle">
 
-  <!-- 頂部血量列 -->
+  <!-- 頂部血量列（左＝玩家、右＝怪獸）-->
   <div class="battle-top">
     <div class="hp-side">
-      <span class="hp-label monster">亂亂怪</span>
-      <span class="hp-hearts" id="monsterHP"></span>
+      <span class="hp-label player" id="playerHpLabel">小勇士</span>
+      <span class="hp-hearts" id="playerHP"></span>
     </div>
     <div class="hp-mid">
       <div class="round-lbl" id="roundLbl">第 1 / 10 局</div>
       <div class="level-lbl"  id="levelLbl">加法星球</div>
     </div>
     <div class="hp-side right">
-      <span class="hp-label player" id="playerHpLabel">小勇士</span>
-      <span class="hp-hearts" id="playerHP"></span>
+      <span class="hp-label monster">亂亂怪</span>
+      <span class="hp-hearts" id="monsterHP"></span>
     </div>
   </div>
 
-  <!-- 中段（怪獸面板 ＋ 題目區）-->
+  <!-- 中段（玩家面板 ＋ 題目區 ＋ 怪獸面板）-->
   <div class="battle-mid">
 
-    <!-- 左側怪獸面板 -->
+    <!-- 左側玩家面板 -->
+    <div class="player-panel">
+      <img id="playerImg" src="" alt="小勇士"
+           class="char-img hidden"
+           onerror="this.classList.add('hidden'); document.getElementById('playerEmoji').classList.remove('hidden');">
+      <div id="playerEmoji" class="player-emoji">🧑‍🚀</div>
+    </div>
+
+    <!-- 中央題目區（動態填入）-->
+    <div class="battle-center" id="battleCenter"></div>
+
+    <!-- 右側怪獸面板 -->
     <div class="monster-panel">
-      <!-- 怪獸角色圖片（預留，之後替換 src）-->
       <img id="monsterImg" src="" alt="亂亂怪"
            class="char-img hidden"
            onerror="this.classList.add('hidden'); document.getElementById('monsterEmoji').classList.remove('hidden');">
@@ -713,28 +730,12 @@ body {
       <div class="monster-dialog" id="monsterDialog">哈哈！你算得出來嗎？</div>
     </div>
 
-    <!-- 中央題目區（動態填入）-->
-    <div class="battle-center" id="battleCenter"></div>
-
   </div>
 
-  <!-- 底部玩家手牌 -->
+  <!-- 底部玩家手牌（全寬）-->
   <div class="battle-bottom">
-    <!-- 玩家角色圖片列（圖片在左，手牌在右）-->
-    <div class="player-bottom-row">
-      <!-- 玩家角色圖片（預留，之後替換 src）-->
-      <div class="player-char-wrap">
-        <img id="playerImg" src="" alt="小勇士"
-             class="char-img hidden"
-             onerror="this.classList.add('hidden'); document.getElementById('playerEmoji').classList.remove('hidden');">
-        <div id="playerEmoji" class="player-emoji">🧑‍🚀</div>
-      </div>
-      <!-- 手牌區 -->
-      <div class="player-hand-wrap">
-        <div class="hand-label">🃏 你的手牌</div>
-        <div class="player-hand" id="playerHand"></div>
-      </div>
-    </div>
+    <div class="hand-label">🃏 你的手牌</div>
+    <div class="player-hand" id="playerHand"></div>
   </div>
 
 </div>
@@ -800,12 +801,15 @@ function toggleBGM() {
   const cur = document.querySelector('.screen.active')?.id;
   if (bgmEnabled) {
     // 依目前畫面決定播哪段 BGM
-    if (bgmScreens.includes(cur))    playBGM();
-    else if (cur === 'screenBattle') playBattleBGM();
+    if (bgmScreens.includes(cur))     playBGM();
+    else if (cur === 'screenBattle')  playBattleBGM();
+    // 結算畫面：重新播放結算 BGM（需知道星數，從 resultAudio src 判斷）
+    else if (cur === 'screenResult' && resultAudio) resultAudio.play().catch(() => {});
   } else {
     // 全部停止
     stopBGM();
     stopBattleBGM();
+    stopResultSound();
   }
 }
 
@@ -851,17 +855,16 @@ function stopBattleBGM() {
   }
 }
 
-/** 播放結算音效（過關 / 失敗）
- *  stars > 0 → 過關音效；stars === 0 → 闖關失敗 */
+/** 播放結算 BGM（loop）
+ *  stars > 0 → 勝利音樂；stars === 0 → 失敗音樂 */
 function playResultSound(stars) {
   if (!bgmEnabled) return;
-  // 先停止上一次的結算音效（避免重疊）
-  if (resultAudio) {
-    resultAudio.pause();
-    resultAudio.currentTime = 0;
-  }
+  // 先停止上一次的結算音樂（避免重疊）
+  stopResultSound();
   const src = stars > 0 ? 'audio/stage-clear.mp3' : 'audio/stage-fail.mp3';
   resultAudio = new Audio(src);
+  resultAudio.loop   = true;
+  resultAudio.volume = 0.5;
   resultAudio.play().catch(() => {});
 }
 
@@ -878,8 +881,8 @@ function stopResultSound() {
 function playSound(type) {
   if (!soundEnabled) return;
   let src;
-  if      (type === 'correct') src = 'audio/stage-clear.mp3';
-  else if (type === 'wrong')   src = 'audio/stage-fail.mp3';
+  if      (type === 'correct') src = 'audio/答對.mp3';
+  else if (type === 'wrong')   src = 'audio/答錯.mp3';
   else if (type === 'card')    src = 'audio/card-play.mp3';
   if (src) new Audio(src).play().catch(() => {});
 }
