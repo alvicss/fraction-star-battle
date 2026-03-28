@@ -41,12 +41,13 @@
 index.html          # 主遊戲（所有程式碼在同一檔案）
 SPEC.md             # 功能規格文件
 audio/
-  intro-bgm.mp3     # 開場背景音樂
-  battle-bgm.mp3    # 對戰背景音樂
-  stage-clear.mp3   # 過關音效
-  stage-fail.mp3    # 失敗音效
-  card-play.mp3     # 出牌音效
-  card-play-alt.mp3 # 備用音效
+  intro-bgm.mp3     # 開場背景音樂（loop）
+  battle-bgm.mp3    # 對戰背景音樂（loop）
+  stage-clear.mp3   # 勝利結算音樂（loop）
+  stage-fail.mp3    # 失敗結算音樂（loop）
+  correct.mp3       # 答對音效
+  wrong.mp3         # 答錯音效
+  card-play.mp3     # 點擊互動音效
 picture/
   monster.png       # 宇宙怪物
   swordsman.png     # 劍士

@@ -166,10 +166,12 @@
 | 檔案 | 用途 | 控制開關 |
 |---|---|---|
 | `audio/intro-bgm.mp3` | 開場三畫面 BGM（loop） | BGM |
-| `audio/battle-bgm.mp3` | 對戰畫面 BGM（loop） | BGM |
-| `audio/stage-clear.mp3` | 過關結算音效 / 答對音效 | BGM / SFX |
-| `audio/stage-fail.mp3` | 失敗結算音效 / 答錯音效 | BGM / SFX |
-| `audio/card-play.mp3` | 點擊互動元素音效 | SFX |
+| `audio/battle-bgm.mp3` | 對戰畫面 BGM（loop，答對/答錯不中斷）| BGM |
+| `audio/stage-clear.mp3` | 勝利結算 BGM（loop） | BGM |
+| `audio/stage-fail.mp3` | 失敗結算 BGM（loop） | BGM |
+| `audio/correct.mp3` | 每題答對音效（一次性）| SFX |
+| `audio/wrong.mp3` | 每題答錯音效（一次性）| SFX |
+| `audio/card-play.mp3` | 點擊互動元素音效（一次性）| SFX |
 
 ### 5.2 BGM 切換邏輯
 

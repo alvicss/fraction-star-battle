@@ -20,11 +20,13 @@ index.html          # 主遊戲（所有 CSS + HTML + JS 全在一個檔案）
 SPEC.md             # 功能規格文件（詳細設計說明）
 README.md           # 專案說明（GitHub 用）
 audio/              # 所有音效（英文檔名，避免 URL 編碼問題）
-  intro-bgm.mp3
-  battle-bgm.mp3
-  stage-clear.mp3
-  stage-fail.mp3
-  card-play.mp3
+  intro-bgm.mp3     # 開場三畫面 BGM（loop）
+  battle-bgm.mp3    # 對戰畫面 BGM（loop）
+  stage-clear.mp3   # 勝利結算 BGM（loop）
+  stage-fail.mp3    # 失敗結算 BGM（loop）
+  correct.mp3       # 每題答對音效
+  wrong.mp3         # 每題答錯音效
+  card-play.mp3     # 點擊互動音效
 picture/            # 所有圖片（英文檔名）
   monster.png
   swordsman.png
