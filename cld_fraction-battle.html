@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🚀 分數星際大作戰</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --space-bg:    #0d1b2a;
+  --space-mid:   #162535;
+  --player-clr:  #4ecdc4;
+  --monster-clr: #ff6b9d;
+  --correct:     #06d6a0;
+  --wrong:       #ef476f;
+  --star-glow:   #ffe066;
+  --card-bg:     #ffffff;
+  --text-dark:   #1a1a2e;
+  --accent:      #a855f7;
+  --orange:      #ff6b35;
+  --radius:      18px;
+  --radius-sm:   11px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--space-bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── 星星背景 ── */
+.star-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.star-dot {
+  position: absolute; background: white; border-radius: 50%;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite;
+  opacity: var(--op, 0.5);
+}
+@keyframes twinkle {
+  0%, 100% { transform: scale(1); opacity: var(--op, 0.5); }
+  50%       { transform: scale(1.8); opacity: 1; }
+}
+.float-star {
+  position: fixed; font-size: 1.2rem; pointer-events: none; z-index: 0; opacity: 0.45;
+  animation: floatStar 6s ease-in-out infinite;
+}
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-22px) rotate(180deg); }
+}
+
+/* ── 所有畫面共用 ── */
+.screen {
+  display: none; position: relative; z-index: 1;
+  min-height: 100vh; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.screen.active { display: flex; }
+.hidden { display: none !important; }
+
+/* ── 通用按鈕 ── */
+.btn {
+  font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1rem;
+  border: none; border-radius: var(--radius-sm); padding: 10px 22px;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn:hover  { transform: translateY(-3px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: linear-gradient(135deg,#4ecdc4,#06d6a0); color: #fff; box-shadow: 0 5px 18px rgba(78,205,196,.45); }
+.btn-accent  { background: linear-gradient(135deg,#a855f7,#7c3aed); color: #fff; box-shadow: 0 5px 18px rgba(168,85,247,.45); }
+.btn-gold    { background: linear-gradient(135deg,#ffd166,#ff9f1c); color: #1a1a2e; box-shadow: 0 5px 18px rgba(255,209,102,.45); }
+.btn-ghost   { background: rgba(255,255,255,.1); color: #8fa8c8; border: 1px solid rgba(255,255,255,.2); }
+.btn-ghost:hover { background: rgba(255,255,255,.17); }
+.btn-sm { font-size: .82rem; padding: 6px 14px; }
+
+/* ── 動畫 ── */
+@keyframes fadeSlideUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+@keyframes popIn    { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+@keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+.anim-fadein { animation: fadeSlideUp 0.6s ease; }
+.anim-pop    { animation: popIn 0.35s ease; }
+
+/* ============================================================
+   SCREEN: INTRO
+   ============================================================ */
+.intro-wrap  { text-align: center; animation: fadeSlideUp 0.7s ease; }
+.intro-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.8rem, 7vw, 3.2rem);
+  color: var(--star-glow);
+  text-shadow: 0 0 28px rgba(255,224,102,.5), 4px 4px 0 rgba(255,107,53,.35);
+  letter-spacing: 2px; margin-bottom: 6px;
+}
+.intro-sub     { color: #8fa8c8; font-size: .95rem; font-weight: 600; margin-bottom: 28px; }
+.intro-monster { font-size: 5.5rem; animation: pulse 2.5s ease-in-out infinite; margin: 14px 0; }
+.hero-dialog {
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.15);
+  border-radius: 16px; padding: 12px 18px; color: #b8d8f0;
+  font-size: .9rem; max-width: 300px; margin: 0 auto 28px; line-height: 1.55;
+}
+
+/* ============================================================
+   SCREEN: LEVEL SELECT
+   ============================================================ */
+#screenLevelSelect { justify-content: flex-start; padding-top: 32px; }
+.level-header {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.5rem,5vw,2rem); color: var(--star-glow); margin-bottom: 6px;
+}
+.level-sub  { color: #8fa8c8; font-size: .85rem; margin-bottom: 24px; }
+.level-grid {
+  display: grid; grid-template-columns: repeat(2,1fr);
+  gap: 14px; max-width: 480px; width: 100%;
+}
+.level-card {
+  background: var(--space-mid); border: 2px solid rgba(255,255,255,.08);
+  border-radius: var(--radius); padding: 18px 14px; cursor: pointer; text-align: center;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.level-card:hover { transform: translateY(-5px); border-color: var(--star-glow); box-shadow: 0 8px 22px rgba(255,224,102,.18); }
+/* 第5關跨兩欄置中 */
+.level-card.lv5 { grid-column: 1 / -1; max-width: 240px; margin: 0 auto; width: 100%; }
+.lv-icon  { font-size: 2.3rem; margin-bottom: 7px; }
+.lv-name  { font-family:'Fredoka One',cursive; color: var(--star-glow); font-size: 1.05rem; margin-bottom: 3px; }
+.lv-desc  { color: #8fa8c8; font-size: .75rem; }
+.lv-stars { margin-top: 7px; font-size: .88rem; color: var(--star-glow); min-height: 20px; }
+.star-empty { opacity: .2; }
+
+/* ============================================================
+   NAV BAR
+   ============================================================ */
+.nav-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; padding: 7px 14px;
+  background: rgba(13,27,42,.92); backdrop-filter: blur(10px); gap: 10px;
+}
+.nav-title { font-family:'Fredoka One',cursive; color: var(--star-glow); font-size: .9rem; flex: 1; text-align: center; }
+.sound-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; }
+
+/* ============================================================
+   SCREEN: BATTLE — 橫向三欄佈局
+   ============================================================ */
+#screenBattle {
+  padding: 46px 0 0 0;
+  justify-content: flex-start;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+/* 頂部血量列 */
+.battle-top {
+  display: flex; align-items: center;
+  padding: 6px 14px;
+  background: rgba(255,255,255,.055);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  gap: 6px; flex-shrink: 0;
+}
+.hp-side        { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.hp-side.right  { align-items: flex-end; }
+.hp-label       { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; }
+.hp-label.player  { color: var(--player-clr); }
+.hp-label.monster { color: var(--monster-clr); }
+.hp-hearts { font-size: .85rem; line-height: 1; }
+.hp-mid    { text-align: center; flex: 0 0 auto; padding: 0 6px; }
+.round-lbl { font-family:'Fredoka One',cursive; color: var(--star-glow); font-size: .85rem; white-space: nowrap; }
+.level-lbl { color: #8fa8c8; font-size: .6rem; margin-top: 1px; }
+
+/* 中段主體 */
+.battle-mid {
+  display: flex; flex-direction: row;
+  flex: 1; min-height: 0;
+  padding: 10px 12px; gap: 10px;
+  align-items: stretch;
+}
+
+/* 左側怪獸面板 */
+.monster-panel {
+  flex: 0 0 90px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px;
+  background: rgba(255,107,157,.07); border: 1px solid rgba(255,107,157,.18);
+  border-radius: var(--radius); padding: 10px 6px; text-align: center;
+}
+.monster-emoji  { font-size: 2.2rem; transition: all .3s; }
+.monster-name   { font-family:'Fredoka One',cursive; color: var(--monster-clr); font-size: .78rem; }
+.monster-dialog { font-size: .64rem; color: #c8a0b0; line-height: 1.4; min-height: 28px; }
+
+/* 中央題目區（動態填入）*/
+.battle-center {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  gap: 9px; justify-content: center;
+}
+
+/* 題目標籤 */
+.q-label { font-size: .68rem; font-weight: 800; color: #8fa8c8; text-transform: uppercase; letter-spacing: 1px; }
+
+/* 等式列 */
+.equation-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.q-op   { color: var(--orange); font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
+.q-eq   { color: #8fa8c8;       font-family:'Fredoka One',cursive; font-size: 1.3rem;  flex-shrink: 0; }
+.q-ineq { color: var(--accent);  font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
+.q-cmp  { color: var(--accent);  font-family:'Fredoka One',cursive; font-size: 1.9rem;  min-width: 30px; text-align: center; flex-shrink: 0; }
+
+/* 槽位（等式中的卡牌格子）*/
+.eq-slot {
+  min-width: 74px; min-height: 92px;
+  border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; flex-shrink: 0; padding: 5px 6px;
+}
+/* 玩家選牌槽 */
+.eq-slot.p-slot {
+  background: rgba(78,205,196,.08);
+  border: 2.5px dashed rgba(78,205,196,.55);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.eq-slot.p-slot:hover:not(.locked) {
+  border-color: var(--player-clr);
+  background: rgba(78,205,196,.16);
+  transform: translateY(-3px);
+}
+.eq-slot.p-slot.locked {
+  cursor: default;
+  border-style: solid; border-color: var(--player-clr);
+  background: rgba(78,205,196,.05);
+}
+/* 怪獸牌槽 */
+.eq-slot.m-slot {
+  background: rgba(255,107,157,.07);
+  border: 2px dashed rgba(255,107,157,.3);
+}
+.eq-slot.m-slot.filled { border-style: solid; border-color: #ffc0d4; }
+.slot-hint { font-size: .7rem; color: #8fa8c8; font-weight: 700; text-align: center; }
+
+/* 答案輸入（行內，接在等號後）*/
+.ans-inline { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.ans-input-w, .ans-input-n, .ans-input-d {
+  width: 52px; height: 50px; text-align: center;
+  font-size: 1.15rem; font-weight: 800; font-family:'Nunito',sans-serif;
+  border: 2.5px solid rgba(255,255,255,.22); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.92); color: var(--text-dark); outline: none;
+  -webkit-appearance: none; -moz-appearance: textfield;
+}
+.ans-input-w:focus, .ans-input-n:focus, .ans-input-d:focus { border-color: var(--player-clr); }
+.ans-input-w::-webkit-inner-spin-button,.ans-input-n::-webkit-inner-spin-button,.ans-input-d::-webkit-inner-spin-button,
+.ans-input-w::-webkit-outer-spin-button,.ans-input-n::-webkit-outer-spin-button,.ans-input-d::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+.ans-frac-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ans-divider    { width: 52px; height: 2.5px; background: rgba(255,255,255,.45); border-radius: 2px; }
+.ans-label      { font-size: .58rem; color: #8fa8c8; font-weight: 700; }
+.ans-also       { color: #8fa8c8; font-size: .88rem; font-weight: 800; }
+
+/* 比大小按鈕 */
+.cmp-buttons { display: flex; gap: 9px; flex-wrap: wrap; }
+.cmp-btn {
+  font-family:'Fredoka One',cursive; font-size: 1.45rem;
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 3px solid transparent; background: rgba(255,255,255,.1); color: #fff;
+  cursor: pointer; transition: all .15s;
+}
+.cmp-btn:hover { background: rgba(255,255,255,.22); transform: scale(1.12); border-color: var(--star-glow); }
+
+/* 操作按鈕列 */
+.btn-row { display: flex; gap: 7px; flex-wrap: wrap; }
+
+/* 回饋訊息 */
+.feedback-box {
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  font-size: .8rem; font-weight: 700; line-height: 1.5;
+  animation: popIn .35s ease;
+}
+.feedback-correct { background: rgba(6,214,160,.14); border: 1.5px solid var(--correct); color: #9dffd6; }
+.feedback-wrong   { background: rgba(239,71,111,.14); border: 1.5px solid var(--wrong);   color: #ffb0c0; }
+.feedback-info    { background: rgba(255,224,102,.1);  border: 1.5px solid var(--star-glow); color: #ffe8a0; }
+
+/* 底部玩家手牌 */
+.battle-bottom {
+  background: rgba(78,205,196,.06); border-top: 1px solid rgba(78,205,196,.14);
+  padding: 9px 14px; flex-shrink: 0;
+}
+.hand-label  { font-size: .68rem; font-weight: 800; color: var(--player-clr); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
+.player-hand { display: flex; gap: 7px; justify-content: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; }
+
+/* ============================================================
+   卡牌
+   ============================================================ */
+.card {
+  background: var(--card-bg); border: 2.5px solid #dde5f0;
+  border-radius: var(--radius-sm); padding: 5px 7px;
+  min-width: 68px; min-height: 86px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; user-select: none; flex-shrink: 0;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.card:hover:not(.card-disabled):not(.card-played):not(.card-in-slot) {
+  transform: translateY(-5px); box-shadow: 0 7px 18px rgba(0,0,0,.2); border-color: var(--star-glow);
+}
+.card.card-played   { opacity: .28; cursor: default; transform: none !important; }
+.card.card-disabled { opacity: .5;  cursor: default; }
+.card.card-in-slot  { opacity: .38; cursor: default; }
+.card.card-integer  { background: #f0fff8; border-color: #86efac; }
+/* 卡牌類型標籤 */
+.card-badge {
+  position: absolute; top: 2px; right: 2px;
+  font-size: .48rem; font-weight: 800; padding: 1px 4px; border-radius: 5px; color: #fff;
+}
+.badge-proper   { background: #4ecdc4; }
+.badge-improper { background: #a855f7; }
+.badge-mixed    { background: #ff6b35; }
+.badge-integer  { background: #06d6a0; color: #1a1a2e; }
+
+/* ============================================================
+   分數顯示 — 高對比度（深色字 / 深色分數線，白色卡牌背景）
+   ============================================================ */
+.frac {
+  display: inline-flex; flex-direction: column; align-items: center;
+  font-family:'Nunito',sans-serif; font-weight: 900; font-size: .95rem;
+  line-height: 1.1; color: #1a1a2e; vertical-align: middle;
+}
+/* 分數線：粗且深色，在白色卡牌上清晰可見 */
+.frac-line { width: 100%; min-width: 18px; height: 2.5px; background: #1a1a2e; margin: 2px 0; border-radius: 1px; }
+.mixed-num { display: inline-flex; align-items: center; gap: 3px; font-weight: 900; color: #1a1a2e; }
+.whole-part { font-size: 1.1rem; font-weight: 900; color: #1a1a2e; }
+
+/* 槽位內放大分數 */
+.eq-slot .frac      { font-size: 1.2rem; }
+.eq-slot .frac-line { min-width: 22px; height: 3px; }
+.eq-slot .whole-part { font-size: 1.35rem; }
+
+/* ============================================================
+   SCREEN: RESULT
+   ============================================================ */
+#screenResult { padding: 28px 20px; }
+.result-wrap      { text-align: center; max-width: 400px; width: 100%; animation: fadeSlideUp .5s ease; }
+.result-big-emoji { font-size: 4rem; margin-bottom: 6px; }
+.result-title     { font-family:'Fredoka One',cursive; font-size: 1.9rem; color: var(--star-glow); margin-bottom: 6px; }
+.result-stars     { font-size: 2.3rem; letter-spacing: 7px; margin: 14px 0; }
+.result-stats     { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+.stat-chip        { background: rgba(255,255,255,.1); border-radius: 20px; padding: 5px 13px; font-size: .88rem; font-weight: 700; color: #b8d8f0; }
+.result-msg       { color: #8fa8c8; font-size: .9rem; margin-bottom: 22px; line-height: 1.55; white-space: pre-line; }
+
+/* ============================================================
+   RWD
+   ============================================================ */
+@media (max-width: 430px) {
+  .monster-panel { flex: 0 0 76px; }
+  .card          { min-width: 60px; min-height: 78px; }
+  .eq-slot       { min-width: 62px; min-height: 80px; }
+  .ans-input-w, .ans-input-n, .ans-input-d { width: 46px; height: 45px; font-size: 1rem; }
+  .cmp-btn       { width: 50px; height: 50px; font-size: 1.3rem; }
+}
+/* 手機橫置 */
+@media (max-height: 480px) and (orientation: landscape) {
+  #screenBattle { padding-top: 38px; }
+  .nav-bar      { padding: 4px 12px; }
+  .battle-top   { padding: 4px 12px; }
+  .battle-mid   { padding: 6px 10px; gap: 8px; }
+  .monster-panel { flex: 0 0 76px; padding: 6px 5px; }
+  .monster-emoji { font-size: 1.8rem; }
+  .battle-bottom { padding: 6px 12px; }
+  .card    { min-width: 54px; min-height: 70px; }
+  .eq-slot { min-width: 56px; min-height: 72px; }
+  .ans-input-w, .ans-input-n, .ans-input-d { width: 44px; height: 42px; font-size: .95rem; }
+  .cmp-btn { width: 48px; height: 48px; font-size: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- 星空背景 -->
+<div class="star-bg" id="starBg"></div>
+
+<!-- 浮動裝飾 -->
+<div class="float-star" style="top:7%;left:4%;animation-delay:0s">⭐</div>
+<div class="float-star" style="top:13%;right:7%;animation-delay:1.8s">🌟</div>
+<div class="float-star" style="top:55%;left:2%;animation-delay:3.2s">✨</div>
+<div class="float-star" style="bottom:18%;right:4%;animation-delay:2.1s">💫</div>
+<div class="float-star" style="bottom:35%;left:6%;animation-delay:4s">🌠</div>
+
+<!-- 導覽列（對戰時才顯示）-->
+<div class="nav-bar hidden" id="navBar">
+  <button class="btn btn-ghost btn-sm" onclick="confirmQuit()">← 離開</button>
+  <span class="nav-title">🚀 分數星際大作戰</span>
+  <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+</div>
+
+<!-- ============================================================
+     SCREEN: INTRO
+     ============================================================ -->
+<div class="screen active" id="screenIntro">
+  <div class="intro-wrap">
+    <div class="intro-title">🚀 分數星際大作戰</div>
+    <p class="intro-sub">用分數的力量擊退宇宙怪獸！</p>
+    <div class="intro-monster">👾</div>
+    <div class="hero-dialog">
+      🤖 FRAKIO 說：<br>
+      「小勇士！亂亂怪入侵了數學星球，<br>
+      把所有分數石碑都打亂了！<br>
+      請用分數卡牌來對抗它吧！」
+    </div>
+    <button class="btn btn-primary" onclick="goLevelSelect()">開始冒險 🚀</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: LEVEL SELECT（5 關）
+     ============================================================ -->
+<div class="screen" id="screenLevelSelect">
+  <div class="level-header">選擇關卡</div>
+  <p class="level-sub">選擇你要挑戰的分數技能！</p>
+  <div class="level-grid">
+    <div class="level-card" onclick="startBattle(1)">
+      <div class="lv-icon">🪐</div>
+      <div class="lv-name">加法星球</div>
+      <div class="lv-desc">分數加法</div>
+      <div class="lv-stars" id="stars-1"></div>
+    </div>
+    <div class="level-card" onclick="startBattle(2)">
+      <div class="lv-icon">☄️</div>
+      <div class="lv-name">減法彗星</div>
+      <div class="lv-desc">分數減法</div>
+      <div class="lv-stars" id="stars-2"></div>
+    </div>
+    <div class="level-card" onclick="startBattle(3)">
+      <div class="lv-icon">🌌</div>
+      <div class="lv-name">乘法銀河</div>
+      <div class="lv-desc">分數 × 整數</div>
+      <div class="lv-stars" id="stars-3"></div>
+    </div>
+    <div class="level-card" onclick="startBattle(4)">
+      <div class="lv-icon">🕳️</div>
+      <div class="lv-name">比大小黑洞</div>
+      <div class="lv-desc">大小比較</div>
+      <div class="lv-stars" id="stars-4"></div>
+    </div>
+    <div class="level-card lv5" onclick="startBattle(5)">
+      <div class="lv-icon">⭐</div>
+      <div class="lv-name">雙星挑戰</div>
+      <div class="lv-desc">選兩張牌超越對手！</div>
+      <div class="lv-stars" id="stars-5"></div>
+    </div>
+  </div>
+  <div style="margin-top:18px">
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('screenIntro')">← 返回</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: BATTLE（橫向佈局）
+     ============================================================ -->
+<div class="screen" id="screenBattle">
+
+  <!-- 頂部血量列 -->
+  <div class="battle-top">
+    <div class="hp-side">
+      <span class="hp-label monster">亂亂怪</span>
+      <span class="hp-hearts" id="monsterHP"></span>
+    </div>
+    <div class="hp-mid">
+      <div class="round-lbl" id="roundLbl">第 1 / 10 局</div>
+      <div class="level-lbl"  id="levelLbl">加法星球</div>
+    </div>
+    <div class="hp-side right">
+      <span class="hp-label player">小勇士</span>
+      <span class="hp-hearts" id="playerHP"></span>
+    </div>
+  </div>
+
+  <!-- 中段（怪獸面板 ＋ 題目區）-->
+  <div class="battle-mid">
+
+    <!-- 左側怪獸面板 -->
+    <div class="monster-panel">
+      <div class="monster-emoji" id="monsterEmoji">👾</div>
+      <div class="monster-name">亂亂怪</div>
+      <div class="monster-dialog" id="monsterDialog">哈哈！你算得出來嗎？</div>
+    </div>
+
+    <!-- 中央題目區（動態填入）-->
+    <div class="battle-center" id="battleCenter"></div>
+
+  </div>
+
+  <!-- 底部玩家手牌 -->
+  <div class="battle-bottom">
+    <div class="hand-label">🃏 你的手牌</div>
+    <div class="player-hand" id="playerHand"></div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     SCREEN: RESULT
+     ============================================================ -->
+<div class="screen" id="screenResult">
+  <div class="result-wrap">
+    <div class="result-big-emoji" id="resultEmoji">🏆</div>
+    <div class="result-title"     id="resultTitle">太棒了！</div>
+    <div class="result-stars"     id="resultStars"></div>
+    <div class="result-stats"     id="resultStats"></div>
+    <p   class="result-msg"       id="resultMsg"></p>
+    <div style="display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="restartBattle()">再挑戰！🔄</button>
+      <button class="btn btn-ghost"   onclick="goLevelSelect()">換關卡</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// SOUND（音效模組）
+// ============================================================
+let soundEnabled = true;
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  const src = type === 'correct' ? '../4下分數/audio/ok.mp3' : '../4下分數/audio/what.mp3';
+  new Audio(src).play().catch(() => {});
+}
+
+// ============================================================
+// UTILITY（純數學運算，不操作 DOM）
+// ============================================================
+
+/** 最大公因數 */
+function gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+/** 隨機整數 [min, max] */
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/** 化簡分數 → {n, d} */
+function reduceFrac(n, d) {
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(Math.abs(n), d);
+  return { n: n / g, d: d / g };
+}
+
+/** 假分數 → 帶分數 {whole, n, d}（含化簡）*/
+function toMixed(n, d) {
+  const whole = Math.floor(n / d);
+  const rem   = n % d;
+  if (rem === 0) return { whole, n: 0, d: 1 };
+  const r = reduceFrac(rem, d);
+  return { whole, n: r.n, d: r.d };
+}
+
+/** 帶分數 → 假分數 {n, d} */
+function mixedToImproper(whole, n, d) {
+  return { n: whole * d + n, d };
+}
+
+/** 同分母加法（呼叫前確認 f1.d === f2.d）*/
+function addFrac(f1, f2) {
+  return reduceFrac(f1.n + f2.n, f1.d);
+}
+
+/** 同分母減法（f1.n ≥ f2.n）*/
+function subFrac(f1, f2) {
+  return reduceFrac(f1.n - f2.n, f1.d);
+}
+
+/** 分數 × 整數 */
+function mulFrac(f, k) {
+  return reduceFrac(f.n * k, f.d);
+}
+
+/** 取得卡牌十進位值 */
+function cardValue(card) {
+  return card.whole + card.n / (card.d || 1);
+}
+
+// ============================================================
+// FRACTION RENDERER（分數 → HTML 字串）
+// ============================================================
+
+/** 真分數 / 假分數 HTML */
+function fracHTML(n, d) {
+  return `<span class="frac"><span>${n}</span><div class="frac-line"></div><span>${d}</span></span>`;
+}
+
+/** 帶分數 HTML（n=0 只顯示整數）*/
+function mixedHTML(whole, n, d) {
+  if (n === 0) return `<span class="whole-part">${whole}</span>`;
+  return `<span class="mixed-num"><span class="whole-part">${whole}</span>${fracHTML(n, d)}</span>`;
+}
+
+/** 卡牌上的分數 HTML */
+function cardDisplayHTML(card) {
+  if (card.type === 'integer') return `<span class="whole-part" style="font-size:1.3rem">${card.whole}</span>`;
+  if (card.type === 'proper' || card.type === 'improper') return fracHTML(card.n, card.d);
+  return mixedHTML(card.whole, card.n, card.d);
+}
+
+/** 格式化答案（用於回饋訊息）*/
+function formatAns(ans) {
+  if (ans.n === 0) return `<strong>${ans.whole}</strong>`;
+  if (ans.whole === 0) return `<strong>${fracHTML(ans.n, ans.d)}</strong>`;
+  return `<strong>${mixedHTML(ans.whole, ans.n, ans.d)}</strong>`;
+}
+
+// ============================================================
+// CARD GENERATOR（卡牌生成）
+// ============================================================
+
+/** 產生與 d 互質的 1~(d-1) 的分子 */
+function randCoprime(d) {
+  let n, tries = 0;
+  do { n = randInt(1, d - 1); tries++; } while (gcd(n, d) !== 1 && tries < 60);
+  return n;
+}
+
+function genProperCard(d) {
+  const n = randCoprime(d);
+  return { type: 'proper', whole: 0, n, d, value: n / d };
+}
+
+function genImproperCard(d) {
+  const maxN = Math.min(20, d * 2 + (d - 1));
+  let n, tries = 0;
+  do { n = randInt(d + 1, Math.max(d + 2, maxN)); tries++; }
+  while (gcd(n, d) !== 1 && tries < 80);
+  return { type: 'improper', whole: 0, n, d, value: n / d };
+}
+
+function genMixedCard(d) {
+  const maxW = Math.min(15, Math.floor(19 / d));
+  const w = randInt(1, Math.max(1, maxW));
+  const n = randCoprime(d);
+  return { type: 'mixed', whole: w, n, d, value: w + n / d };
+}
+
+function genIntegerCard() {
+  const w = randInt(2, 9);
+  return { type: 'integer', whole: w, n: 0, d: 1, value: w };
+}
+
+/** 隨機生成一張分數卡（真/假/帶分數，同分母 d）*/
+function genFracCard(d) {
+  return [genProperCard, genImproperCard, genMixedCard][randInt(0, 2)](d);
+}
+
+/** 生成玩家手牌（4張同分母分數卡，不重複）*/
+function genPlayerCards(d) {
+  const cards = [];
+  const gens = [genProperCard, genImproperCard, genMixedCard];
+  for (let i = 0; i < 4; i++) {
+    let c, tries = 0;
+    do { c = gens[randInt(0, 2)](d); tries++; }
+    while (cards.some(x => Math.abs(x.value - c.value) < 0.001) && tries < 80);
+    cards.push(c);
+  }
+  return cards;
+}
+
+/** 第5關牌組生成
+ *  op: '+' | '*'
+ *  怪獸牌值較大；玩家4張每張均 < 怪獸值；
+ *  且保證至少一對玩家牌的計算結果 > 怪獸值 */
+function genLevel5Cards(op) {
+  let monsterCard, playerCards, tries = 0;
+
+  do {
+    // 怪獸牌：帶分數，值在 1.3~4.5 之間
+    const md = randInt(2, 5);
+    const mw = randInt(1, 3);
+    const mn = randCoprime(md);
+    monsterCard = { type: 'mixed', whole: mw, n: mn, d: md, value: mw + mn / md };
+
+    const mV = monsterCard.value;
+    playerCards = [];
+    let innerFail = 0;
+
+    for (let i = 0; i < 4 && innerFail < 120; i++) {
+      let c, ct = 0;
+      do {
+        // 玩家牌：真分數或帶分數（同分母）
+        c = [genProperCard, genMixedCard][randInt(0, 1)](md);
+        ct++;
+      } while ((c.value >= mV || playerCards.some(x => Math.abs(x.value - c.value) < 0.001)) && ct < 60);
+
+      if (c.value < mV) { playerCards.push(c); }
+      else              { i--; innerFail++; }
+    }
+
+    tries++;
+  } while (playerCards.length < 4 || (!validateLv5(playerCards, monsterCard, op) && tries < 120));
+
+  return { monsterCard, playerCards };
+}
+
+/** 驗證第5關：是否存在至少一對玩家牌的計算結果 > 怪獸值 */
+function validateLv5(pCards, mCard, op) {
+  const mV = mCard.value;
+  for (let i = 0; i < pCards.length; i++) {
+    for (let j = i + 1; j < pCards.length; j++) {
+      const result = op === '+'
+        ? pCards[i].value + pCards[j].value
+        : pCards[i].value * pCards[j].value;
+      if (result > mV + 0.001) return true;
+    }
+  }
+  return false;
+}
+
+// ============================================================
+// GAME STATE（遊戲狀態）
+// ============================================================
+const state = {
+  level:             1,
+  round:             0,
+  playerHP:          5,
+  monsterHP:         5,
+  correct:           0,
+  wrong:             0,
+  d:                 2,
+  playerCards:       [],
+  monsterPlayedCard: null,   // 怪獸本局出的牌（物件）
+  playerPlayedIdx:   -1,     // 玩家選的牌 index（關卡1-4）
+  currentAns:        null,   // 正確答案 {whole, n, d}
+  phase:             'pick', // 'pick' | 'answer' | 'done'
+  // 第5關
+  lv5Op:      '+',           // '+' | '*'
+  lv5Monster: null,          // 怪獸牌物件
+  lv5Slots:   [null, null],  // 玩家選的兩張牌 index
+};
+
+// ============================================================
+// STORAGE（localStorage 存檔）
+// ============================================================
+
+function saveStars(level, stars) {
+  try {
+    const data = JSON.parse(localStorage.getItem('fractionBattle') || '{}');
+    if ((data[`lv${level}`] || 0) < stars) {
+      data[`lv${level}`] = stars;
+      localStorage.setItem('fractionBattle', JSON.stringify(data));
+    }
+  } catch (e) {}
+}
+
+function getStars(level) {
+  try { return JSON.parse(localStorage.getItem('fractionBattle') || '{}')[`lv${level}`] || 0; }
+  catch (e) { return 0; }
+}
+
+function loadStarDisplay() {
+  for (let i = 1; i <= 5; i++) {
+    const s  = getStars(i);
+    const el = document.getElementById(`stars-${i}`);
+    if (!el) continue;
+    el.innerHTML = Array.from({ length: 3 }, (_, j) =>
+      j < s ? '⭐' : '<span class="star-empty">⭐</span>'
+    ).join('');
+  }
+}
+
+// ============================================================
+// UI CONTROLLER（畫面控制）
+// ============================================================
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('navBar').classList.toggle('hidden', id !== 'screenBattle');
+}
+
+function goLevelSelect() {
+  loadStarDisplay();
+  showScreen('screenLevelSelect');
+}
+
+function updateHP() {
+  ['player', 'monster'].forEach(side => {
+    const hp = side === 'player' ? state.playerHP : state.monsterHP;
+    const el = document.getElementById(side + 'HP');
+    if (!el) return;
+    el.innerHTML = Array.from({ length: 5 }, (_, i) =>
+      i < hp ? '❤️' : '<span style="opacity:.22">🖤</span>'
+    ).join('');
+  });
+}
+
+function updateRoundLabel() {
+  const names = ['', '加法星球', '減法彗星', '乘法銀河', '比大小黑洞', '雙星挑戰'];
+  document.getElementById('roundLbl').textContent = `第 ${state.round} / 10 局`;
+  document.getElementById('levelLbl').textContent = names[state.level] || '';
+}
+
+function showFeedback(type, msg) {
+  const fb = document.getElementById('feedbackBox');
+  if (!fb) return;
+  fb.className = 'feedback-box feedback-' + type;
+  fb.innerHTML = msg;
+  fb.classList.remove('hidden');
+}
+
+function hideFeedback() {
+  document.getElementById('feedbackBox')?.classList.add('hidden');
+}
+
+// ============================================================
+// MONSTER DIALOG（故事台詞）
+// ============================================================
+const DIALOGS = {
+  start:   ['哈哈！你算得出來嗎？', '來吧！分數讓你頭昏腦脹！', '看看你有沒有本事！', '小鬼頭，別輸得太慘！'],
+  correct: ['不可能！這不科學！', '只是運氣好！', '哼，下次沒那麼幸運！', '不行不行……'],
+  wrong:   ['哈哈！算錯啦！', '果然不行嘛！', '再多練習十年吧！', '笨蛋！笨蛋！'],
+  win:     ['哈哈哈！數學星球是我的啦！'],
+  lose:    ['不可能……這個地球人懂分數！'],
+};
+
+function showMonsterDialog(type) {
+  const arr = DIALOGS[type] || DIALOGS.start;
+  const el  = document.getElementById('monsterDialog');
+  if (el) el.textContent = arr[randInt(0, arr.length - 1)];
+}
+
+// ============================================================
+// RENDER HANDS（渲染玩家手牌）
+// ============================================================
+
+/** 渲染卡牌內部 HTML（類型標籤 + 分數）*/
+function renderCardInner(card) {
+  const labels = { proper:'真分數', improper:'假分數', mixed:'帶分數', integer:'整數' };
+  const clsMap = { proper:'badge-proper', improper:'badge-improper', mixed:'badge-mixed', integer:'badge-integer' };
+  return `<span class="card-badge ${clsMap[card.type]}">${labels[card.type]}</span>
+          <div style="padding:3px">${cardDisplayHTML(card)}</div>`;
+}
+
+/** 渲染玩家手牌
+ *  slotsUsed = 目前放在槽中的卡牌 index 集合（第5關用）*/
+function renderPlayerHand(slotsUsed = new Set()) {
+  const canClick = state.phase === 'pick';
+  document.getElementById('playerHand').innerHTML = state.playerCards.map((c, i) => {
+    const isPlayed = (i === state.playerPlayedIdx);
+    const inSlot   = slotsUsed.has(i);
+
+    let cls = 'card';
+    if (c.type === 'integer') cls += ' card-integer';
+    if (isPlayed)             cls += ' card-played';
+    else if (inSlot)          cls += ' card-in-slot';
+    else if (!canClick)       cls += ' card-disabled';
+
+    const click = canClick ? `onclick="onPlayerCardClick(${i})"` : '';
+    return `<div class="${cls}" data-idx="${i}" ${click}>${renderCardInner(c)}</div>`;
+  }).join('');
+}
+
+// ============================================================
+// BATTLE FLOW（對戰主流程）
+// ============================================================
+
+function startBattle(level) {
+  state.level     = level;
+  state.round     = 0;
+  state.playerHP  = 5;
+  state.monsterHP = 5;
+  state.correct   = 0;
+  state.wrong     = 0;
+  document.getElementById('monsterEmoji').textContent = '👾';
+  showScreen('screenBattle');
+  updateHP();
+  showMonsterDialog('start');
+  nextRound();
+}
+
+function nextRound() {
+  if (state.round >= 10 || state.playerHP <= 0 || state.monsterHP <= 0) {
+    endBattle(); return;
+  }
+
+  state.round++;
+  state.playerPlayedIdx  = -1;
+  state.monsterPlayedCard = null;
+  state.lv5Slots          = [null, null];
+  state.phase             = 'pick';
+  hideFeedback();
+  updateHP();
+  updateRoundLabel();
+
+  state.d = randInt(2, 9);
+
+  if (state.level <= 2) {
+    // 關卡1/2：玩家4張分數牌；怪獸出1張同分母分數牌
+    state.playerCards       = genPlayerCards(state.d);
+    state.monsterPlayedCard = genFracCard(state.d);
+    setupCalcUI();
+
+  } else if (state.level === 3) {
+    // 關卡3：玩家4張分數牌；怪獸出1張整數牌
+    state.playerCards       = genPlayerCards(state.d);
+    state.monsterPlayedCard = genIntegerCard();
+    setupCalcUI();
+
+  } else if (state.level === 4) {
+    // 關卡4：玩家先選牌，怪獸後出
+    state.playerCards       = genPlayerCards(state.d);
+    state.monsterPlayedCard = genFracCard(state.d);
+    setupLevel4UI();
+
+  } else {
+    // 關卡5：怪獸先亮牌，玩家選兩張計算超越
+    setupLevel5UI();
+  }
+
+  renderPlayerHand();
+}
+
+function confirmQuit() {
+  if (confirm('確定要離開這場對戰嗎？')) goLevelSelect();
+}
+
+/** 統一點牌入口 */
+function onPlayerCardClick(idx) {
+  if      (state.level === 5) onLevel5CardClick(idx);
+  else if (state.level === 4) onLevel4CardPick(idx);
+  else                        onCalcCardPick(idx);
+}
+
+// ============================================================
+// 關卡 1 / 2 / 3：計算類
+// ============================================================
+
+/** 建立計算類 UI（等式骨架 + 空槽）*/
+function setupCalcUI() {
+  const opSym = { 1:'＋', 2:'－', 3:'×' }[state.level];
+  const hints = {
+    1:'選一張手牌出擊！ 玩家 ＋ 對手 ＝ ？',
+    2:'選一張手牌出擊！ 大數 － 小數 ＝ ？',
+    3:'選一張分數牌！ 分數 × 對手整數 ＝ ？',
+  };
+
+  document.getElementById('battleCenter').innerHTML = `
+    <div class="q-label">${hints[state.level]}</div>
+    <div class="equation-row" id="eqRow">
+      <div class="eq-slot p-slot" id="pSlot">
+        <span class="slot-hint">點選<br>手牌</span>
+      </div>
+      <span class="q-op">${opSym}</span>
+      <div class="eq-slot m-slot" id="mSlot">
+        <span class="slot-hint">？</span>
+      </div>
+      <span class="q-eq hidden" id="eqEq">＝</span>
+      <div class="ans-inline hidden" id="ansInline">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <span class="ans-label">整數</span>
+            <input class="ans-input-w" id="ansWhole" type="number" min="0" placeholder="0"
+                   onkeydown="if(event.key==='Enter')document.getElementById('checkBtn')?.click()">
+          </div>
+          <span class="ans-also">又</span>
+          <div class="ans-frac-group">
+            <span class="ans-label">分子</span>
+            <input class="ans-input-n" id="ansNumer" type="number" min="0" placeholder="0"
+                   onkeydown="if(event.key==='Enter')document.getElementById('checkBtn')?.click()">
+            <div class="ans-divider"></div>
+            <input class="ans-input-d" id="ansDenum" type="number" min="1" placeholder="1"
+                   onkeydown="if(event.key==='Enter')document.getElementById('checkBtn')?.click()">
+            <span class="ans-label">分母</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row hidden" id="btnRow">
+      <button class="btn btn-primary"           id="checkBtn" onclick="checkCalcAnswer(false)">確認 ✓</button>
+      <button class="btn btn-accent  hidden"    id="retryBtn" onclick="checkCalcAnswer(true)">再試 🔄</button>
+      <button class="btn btn-gold    hidden"    id="nextBtn"  onclick="nextRound()">下一局 →</button>
+      <button class="btn btn-ghost btn-sm"      id="hintBtn"  onclick="showCalcHint()">💡 提示</button>
+    </div>
+    <div class="feedback-box hidden" id="feedbackBox"></div>
+  `;
+}
+
+/** 玩家點選手牌（關卡1/2/3）
+ *  點牌 → 鎖定玩家槽 → 怪獸牌自動揭曉 → 顯示答案輸入欄 */
+function onCalcCardPick(idx) {
+  if (state.phase !== 'pick') return;
+
+  state.playerPlayedIdx = idx;
+  state.phase = 'answer';
+
+  const pCard = state.playerCards[idx];
+  const mCard = state.monsterPlayedCard;
+
+  // 計算正確答案，決定左右牌的排列
+  const pFrac = mixedToImproper(pCard.whole, pCard.n, pCard.d);
+  let result, leftCard, rightCard;
+
+  if (state.level === 1) {
+    const mFrac = mixedToImproper(mCard.whole, mCard.n, mCard.d);
+    result    = addFrac(pFrac, mFrac);
+    leftCard  = pCard;
+    rightCard = mCard;
+
+  } else if (state.level === 2) {
+    // 同分母減法：比較分子，大的放左側
+    const mFrac = mixedToImproper(mCard.whole, mCard.n, mCard.d);
+    if (pFrac.n >= mFrac.n) {
+      result = subFrac(pFrac, mFrac); leftCard = pCard; rightCard = mCard;
+    } else {
+      result = subFrac(mFrac, pFrac); leftCard = mCard; rightCard = pCard;
+    }
+
+  } else {
+    // 關卡3：分數 × 整數
+    result    = mulFrac(pFrac, mCard.whole);
+    leftCard  = pCard;
+    rightCard = mCard;
+  }
+
+  state.currentAns = toMixed(result.n, result.d);
+
+  // 填入玩家槽（鎖定）
+  const pSlot = document.getElementById('pSlot');
+  if (pSlot) { pSlot.innerHTML = renderCardInner(leftCard); pSlot.classList.add('locked'); }
+
+  // 怪獸牌揭曉
+  const mSlot = document.getElementById('mSlot');
+  if (mSlot) { mSlot.innerHTML = renderCardInner(rightCard); mSlot.classList.add('filled', 'anim-pop'); }
+
+  // 顯示等號與答案輸入
+  document.getElementById('eqEq')?.classList.remove('hidden');
+  document.getElementById('ansInline')?.classList.remove('hidden');
+  document.getElementById('btnRow')?.classList.remove('hidden');
+
+  renderPlayerHand();
+  setTimeout(() => document.getElementById('ansWhole')?.focus(), 80);
+}
+
+/** 驗證計算類答案（允許等值約分，禁止假分數作答）*/
+function checkCalcAnswer(isRetry) {
+  const w   = parseInt(document.getElementById('ansWhole')?.value) || 0;
+  const n   = parseInt(document.getElementById('ansNumer')?.value) || 0;
+  const d   = parseInt(document.getElementById('ansDenum')?.value) || 1;
+  const ans = state.currentAns;
+
+  // 交叉相乘比較數值，避免浮點誤差
+  const userTotal   = w * d + n;
+  const ansTotal    = ans.whole * ans.d + ans.n;
+  const sameValue   = (userTotal * ans.d === ansTotal * d);
+  const hasImproper = (n > 0 && n >= d);
+  const isCorrect   = sameValue && !hasImproper;
+
+  if (isCorrect) {
+    if (!isRetry) {
+      state.correct++;
+      state.monsterHP--;  // 答對怪獸扣血（全關卡）
+    }
+    updateHP();
+    document.getElementById('monsterEmoji').textContent = '😱';
+    showMonsterDialog('correct');
+    playSound('correct');
+    showFeedback('correct', `🎉 答對了！正確答案是 ${formatAns(ans)}`);
+    document.getElementById('checkBtn')?.classList.add('hidden');
+    document.getElementById('retryBtn')?.classList.add('hidden');
+    document.getElementById('hintBtn')?.classList.add('hidden');
+    document.getElementById('nextBtn')?.classList.remove('hidden');
+    state.phase = 'done';
+
+  } else {
+    if (!isRetry) {
+      state.wrong++;
+      if (state.level <= 2) {
+        // 加減法答錯扣玩家血；乘法關卡鼓勵學習不扣血
+        state.playerHP--;
+        updateHP();
+      }
+    }
+    document.getElementById('monsterEmoji').textContent = '😈';
+    showMonsterDialog('wrong');
+    playSound('wrong');
+
+    const msg = (hasImproper && sameValue)
+      ? `🔔 數值是對的，但 <strong>${n}/${d}</strong> 是假分數！分數部分的分子要比分母小喔！`
+      : `😅 哎呀算錯了！記得化成帶分數，且分數部分分子要小於分母！`;
+    showFeedback('wrong', msg);
+    document.getElementById('checkBtn')?.classList.add('hidden');
+    document.getElementById('retryBtn')?.classList.remove('hidden');
+  }
+}
+
+function showCalcHint() {
+  showFeedback('info', `💡 提示：把卡牌化成假分數計算，結果再化回帶分數。分數部分一定要分子 ＜ 分母（真分數）！`);
+  document.getElementById('hintBtn')?.classList.add('hidden');
+}
+
+// ============================================================
+// 關卡 4：比大小
+// ============================================================
+
+/** 建立比大小 UI（玩家先選，怪獸後出）*/
+function setupLevel4UI() {
+  document.getElementById('battleCenter').innerHTML = `
+    <div class="q-label">先選一張手牌鎖定，再判斷與對手的大小！</div>
+    <div class="equation-row" id="eqRow">
+      <div class="eq-slot p-slot" id="pSlot">
+        <span class="slot-hint">點選<br>手牌</span>
+      </div>
+      <span class="q-cmp" id="cmpSym">？</span>
+      <div class="eq-slot m-slot" id="mSlot">
+        <span class="slot-hint">？</span>
+      </div>
+    </div>
+    <div class="cmp-buttons hidden" id="cmpBtns">
+      <button class="cmp-btn" onclick="checkLevel4('>')">＞</button>
+      <button class="cmp-btn" onclick="checkLevel4('=')">＝</button>
+      <button class="cmp-btn" onclick="checkLevel4('<')">＜</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold hidden" id="nextBtn" onclick="nextRound()">下一局 →</button>
+    </div>
+    <div class="feedback-box hidden" id="feedbackBox"></div>
+  `;
+}
+
+/** 玩家點選手牌（關卡4）：鎖定後怪獸自動出牌，顯示比大小按鈕 */
+function onLevel4CardPick(idx) {
+  if (state.phase !== 'pick') return;
+
+  state.playerPlayedIdx = idx;
+  state.phase = 'answer';
+
+  const pCard = state.playerCards[idx];
+  const mCard = state.monsterPlayedCard;
+
+  // 鎖定玩家槽
+  const pSlot = document.getElementById('pSlot');
+  if (pSlot) { pSlot.innerHTML = renderCardInner(pCard); pSlot.classList.add('locked'); }
+
+  // 怪獸牌揭曉
+  const mSlot = document.getElementById('mSlot');
+  if (mSlot) { mSlot.innerHTML = renderCardInner(mCard); mSlot.classList.add('filled', 'anim-pop'); }
+
+  document.getElementById('cmpBtns')?.classList.remove('hidden');
+  renderPlayerHand();
+}
+
+/** 玩家選擇比較符號 */
+function checkLevel4(sym) {
+  if (state.playerPlayedIdx < 0) return;
+
+  const pCard = state.playerCards[state.playerPlayedIdx];
+  const mCard = state.monsterPlayedCard;
+  const pVal  = cardValue(pCard);
+  const mVal  = cardValue(mCard);
+  const diff  = Math.abs(pVal - mVal);
+
+  const correct = diff < 0.0001
+    ? sym === '='
+    : sym === (pVal > mVal ? '>' : '<');
+
+  // 更新符號顯示
+  const symMap = { '>':'＞', '<':'＜', '=':'＝' };
+  const cmpEl  = document.getElementById('cmpSym');
+  if (cmpEl) {
+    cmpEl.textContent = symMap[sym];
+    cmpEl.style.color = correct ? 'var(--correct)' : 'var(--wrong)';
+  }
+
+  document.getElementById('cmpBtns')?.classList.add('hidden');
+
+  if (correct) {
+    state.correct++;
+    state.monsterHP--;
+    updateHP();
+    document.getElementById('monsterEmoji').textContent = '😱';
+    showMonsterDialog('correct');
+    playSound('correct');
+    showFeedback('correct', `🎉 答對了！`);
+  } else {
+    state.wrong++;
+    state.playerHP--;
+    updateHP();
+    document.getElementById('monsterEmoji').textContent = '😈';
+    showMonsterDialog('wrong');
+    playSound('wrong');
+    const correctSym = diff < 0.0001 ? '＝' : pVal > mVal ? '＞' : '＜';
+    showFeedback('wrong', `😅 答錯了！正確應該是 <strong>${correctSym}</strong>`);
+  }
+
+  document.getElementById('nextBtn')?.classList.remove('hidden');
+  state.phase = 'done';
+}
+
+// ============================================================
+// 關卡 5：雙星挑戰
+// ============================================================
+
+/** 建立雙星挑戰 UI（怪獸先亮牌）*/
+function setupLevel5UI() {
+  state.lv5Op = Math.random() < 0.5 ? '+' : '*';
+  const opSym = state.lv5Op === '+' ? '＋' : '×';
+
+  const { monsterCard, playerCards } = genLevel5Cards(state.lv5Op);
+  state.lv5Monster  = monsterCard;
+  state.playerCards = playerCards;
+  state.lv5Slots    = [null, null];
+
+  document.getElementById('battleCenter').innerHTML = `
+    <div class="q-label">亂亂怪先出牌！選兩張讓計算結果大於對手！（每張牌都比對手小，要靠計算！）</div>
+    <div class="equation-row" id="eqRow">
+      <div class="eq-slot p-slot" id="lv5S0" onclick="onLv5SlotClear(0)">
+        <span class="slot-hint">選牌①</span>
+      </div>
+      <span class="q-op">${opSym}</span>
+      <div class="eq-slot p-slot" id="lv5S1" onclick="onLv5SlotClear(1)">
+        <span class="slot-hint">選牌②</span>
+      </div>
+      <span class="q-ineq">＞</span>
+      <div class="eq-slot m-slot filled" id="lv5M">
+        ${renderCardInner(monsterCard)}
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary hidden" id="checkBtn" onclick="checkLevel5()">確認 ✓</button>
+      <button class="btn btn-gold    hidden" id="nextBtn"  onclick="nextRound()">下一局 →</button>
+    </div>
+    <div class="feedback-box hidden" id="feedbackBox"></div>
+  `;
+}
+
+/** 點擊已填槽位 → 清除（取消選牌）*/
+function onLv5SlotClear(slotIdx) {
+  if (state.lv5Slots[slotIdx] === null) return;
+  state.lv5Slots[slotIdx] = null;
+  refreshLv5Slot(slotIdx);
+  document.getElementById('checkBtn')?.classList.add('hidden');
+  renderPlayerHand(new Set(state.lv5Slots.filter(s => s !== null)));
+}
+
+/** 玩家點選手牌（關卡5）*/
+function onLevel5CardClick(idx) {
+  if (state.phase !== 'pick') return;
+
+  // 若牌已在某槽中，點擊則移除
+  const existSlot = state.lv5Slots.findIndex(s => s === idx);
+  if (existSlot >= 0) {
+    state.lv5Slots[existSlot] = null;
+    refreshLv5Slot(existSlot);
+    document.getElementById('checkBtn')?.classList.add('hidden');
+    renderPlayerHand(new Set(state.lv5Slots.filter(s => s !== null)));
+    return;
+  }
+
+  // 填第一個空槽
+  for (let i = 0; i < 2; i++) {
+    if (state.lv5Slots[i] === null) {
+      state.lv5Slots[i] = idx;
+      refreshLv5Slot(i);
+      const slotSet = new Set(state.lv5Slots.filter(s => s !== null));
+      renderPlayerHand(slotSet);
+      // 兩槽都填滿後顯示確認按鈕
+      if (state.lv5Slots[0] !== null && state.lv5Slots[1] !== null) {
+        document.getElementById('checkBtn')?.classList.remove('hidden');
+      }
+      return;
+    }
+  }
+
+  // 兩槽均滿：替換第一槽
+  state.lv5Slots[0] = idx;
+  refreshLv5Slot(0);
+  renderPlayerHand(new Set(state.lv5Slots.filter(s => s !== null)));
+}
+
+/** 刷新第5關槽位顯示 */
+function refreshLv5Slot(slotIdx) {
+  const slot    = document.getElementById(`lv5S${slotIdx}`);
+  const cardIdx = state.lv5Slots[slotIdx];
+  if (!slot) return;
+  if (cardIdx === null) {
+    slot.innerHTML = `<span class="slot-hint">選牌${slotIdx === 0 ? '①' : '②'}</span>`;
+    slot.classList.remove('locked');
+  } else {
+    slot.innerHTML = renderCardInner(state.playerCards[cardIdx]);
+    slot.classList.add('locked');
+  }
+}
+
+/** 確認第5關答案 */
+function checkLevel5() {
+  if (state.lv5Slots[0] === null || state.lv5Slots[1] === null) return;
+
+  const c0 = state.playerCards[state.lv5Slots[0]];
+  const c1 = state.playerCards[state.lv5Slots[1]];
+  const mV = cardValue(state.lv5Monster);
+
+  // 計算玩家結果（乘法用假分數避免浮點誤差）
+  let pV;
+  if (state.lv5Op === '+') {
+    pV = cardValue(c0) + cardValue(c1);
+  } else {
+    const f0 = mixedToImproper(c0.whole, c0.n, c0.d);
+    const f1 = mixedToImproper(c1.whole, c1.n, c1.d);
+    pV = (f0.n * f1.n) / (f0.d * f1.d);
+  }
+
+  const pass = pV > mV + 0.001;
+
+  if (pass) {
+    state.correct++;
+    state.monsterHP--;
+    updateHP();
+    document.getElementById('monsterEmoji').textContent = '😱';
+    showMonsterDialog('correct');
+    playSound('correct');
+    showFeedback('correct', `🎉 答對了！這兩張牌合力超越了對手！`);
+    document.getElementById('checkBtn')?.classList.add('hidden');
+    document.getElementById('nextBtn')?.classList.remove('hidden');
+    state.phase = 'done';
+  } else {
+    state.wrong++;
+    state.playerHP--;
+    updateHP();
+    document.getElementById('monsterEmoji').textContent = '😈';
+    showMonsterDialog('wrong');
+    playSound('wrong');
+    showFeedback('wrong', `😅 這組合算出來還不夠大！試試換別的兩張！`);
+    // 清空槽讓玩家重試
+    state.lv5Slots = [null, null];
+    refreshLv5Slot(0);
+    refreshLv5Slot(1);
+    renderPlayerHand();
+    document.getElementById('checkBtn')?.classList.add('hidden');
+  }
+}
+
+// ============================================================
+// END BATTLE（結算）
+// ============================================================
+function endBattle() {
+  const pH = state.playerHP;
+  const mH = state.monsterHP;
+  let stars, title, emoji, msg;
+
+  if (mH <= 0 && pH > 0) {
+    stars = 3; title = '大勝利！'; emoji = '🏆';
+    msg = '亂亂怪：「不可能……你真的懂分數！嗚嗚嗚……」\nFRAKIO：「太棒了！數學星球又安全了！」';
+  } else if (pH > mH) {
+    stars = 2; title = '勝利！'; emoji = '🌟';
+    msg = 'FRAKIO：「不錯喔！你成功擊退了亂亂怪！繼續練習會更強！」';
+  } else if (Math.abs(pH - mH) <= 1) {
+    stars = 1; title = '勢均力敵！'; emoji = '🤝';
+    msg = 'FRAKIO：「差一點點！再練習一次，下次一定贏！」';
+  } else {
+    stars = 0; title = '繼續加油！'; emoji = '💪';
+    msg = '亂亂怪：「哈哈哈！這塊領土是我的啦！」\nFRAKIO：「沒關係！多練習幾次你一定能贏！」';
+  }
+
+  saveStars(state.level, stars);
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultStars').innerHTML = Array.from({ length: 3 },
+    (_, i) => i < stars ? '⭐' : '<span class="star-empty">⭐</span>'
+  ).join('');
+  document.getElementById('resultStats').innerHTML = `
+    <span class="stat-chip">✅ 答對 ${state.correct}</span>
+    <span class="stat-chip">❌ 答錯 ${state.wrong}</span>
+    <span class="stat-chip">❤️ 剩 ${pH} 血</span>
+  `;
+  document.getElementById('resultMsg').textContent = msg;
+  showScreen('screenResult');
+}
+
+function restartBattle() { startBattle(state.level); }
+
+// ============================================================
+// KEYBOARD SUPPORT（Enter 快速確認）
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  for (const id of ['checkBtn', 'retryBtn', 'nextBtn']) {
+    const btn = document.getElementById(id);
+    if (btn && !btn.classList.contains('hidden')) { btn.click(); break; }
+  }
+});
+
+// ============================================================
+// 星空背景生成
+// ============================================================
+function createStarBg() {
+  const bg = document.getElementById('starBg');
+  for (let i = 0; i < 90; i++) {
+    const el = document.createElement('div');
+    const sz = Math.random() * 2.4 + 0.4;
+    el.className = 'star-dot';
+    el.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${(Math.random()*100).toFixed(2)}%;
+      top:${(Math.random()*100).toFixed(2)}%;
+      --dur:${(2 + Math.random() * 4).toFixed(1)}s;
+      --op:${(0.25 + Math.random() * 0.55).toFixed(2)};
+      animation-delay:${(Math.random() * 5).toFixed(1)}s;
+    `;
+    bg.appendChild(el);
+  }
+}
+
+// ============================================================
+// INIT（初始化）
+// ============================================================
+createStarBg();
+loadStarDisplay();
+</script>
+</body>
+</html>
