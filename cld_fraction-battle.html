@@ -131,6 +131,85 @@ body {
 .star-empty { opacity: .2; }
 
 /* ============================================================
+   SCREEN: CHAR SELECT（腳色選擇）
+   ============================================================ */
+#screenCharSelect { justify-content: flex-start; padding-top: 32px; }
+.char-select-header {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.5rem,5vw,2rem); color: var(--star-glow); margin-bottom: 6px;
+}
+.char-select-sub { color: #8fa8c8; font-size: .85rem; margin-bottom: 28px; }
+
+/* 腳色卡片容器 */
+.char-select-grid {
+  display: flex; flex-direction: row; justify-content: center;
+  gap: 18px; flex-wrap: wrap; max-width: 520px; width: 100%;
+}
+
+/* 單張腳色卡片 */
+.char-card {
+  background: var(--space-mid); border: 2px solid rgba(255,255,255,.1);
+  border-radius: var(--radius); padding: 18px 14px; cursor: pointer; text-align: center;
+  width: 140px; transition: transform .2s, border-color .2s, box-shadow .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.char-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--player-clr);
+  box-shadow: 0 10px 28px rgba(78,205,196,.28);
+}
+.char-card img {
+  width: 90px; height: 90px; object-fit: contain;
+  border-radius: 12px;
+}
+.char-card-name {
+  font-family: 'Fredoka One', cursive;
+  color: var(--star-glow); font-size: 1rem;
+}
+
+/* 腳色選取 RWD — 平板（≥ 600px）*/
+@media (min-width: 600px) {
+  .char-select-grid { gap: 26px; max-width: 660px; }
+  .char-card { width: 180px; padding: 22px 16px; }
+  .char-card img { width: 130px; height: 130px; }
+  .char-card-name { font-size: 1.15rem; }
+}
+/* 腳色選取 RWD — 桌機（≥ 960px）*/
+@media (min-width: 960px) {
+  .char-select-grid { gap: 38px; max-width: 840px; }
+  .char-card { width: 230px; padding: 28px 20px; }
+  .char-card img { width: 170px; height: 170px; }
+  .char-card-name { font-size: 1.3rem; }
+}
+
+/* ============================================================
+   開場怪獸圖片
+   ============================================================ */
+.intro-monster-img {
+  width: clamp(100px, 22vw, 180px);
+  height: auto; object-fit: contain;
+  animation: pulse 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px rgba(255,107,53,.5));
+  margin: 14px 0; display: block; margin-left: auto; margin-right: auto;
+}
+
+/* ============================================================
+   全域音效控制（所有畫面固定顯示）
+   ============================================================ */
+.global-ctrl {
+  position: fixed; top: 10px; right: 12px; z-index: 200;
+  display: flex; gap: 6px; align-items: center;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.2);
+  border-radius: 8px; padding: 6px 10px; font-size: 1rem;
+  cursor: pointer; transition: background .15s, opacity .15s;
+  color: white; line-height: 1; font-family: inherit;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,.25); }
+.ctrl-btn.off   { opacity: .4; }
+
+/* ============================================================
    NAV BAR
    ============================================================ */
 .nav-bar {
@@ -437,6 +516,23 @@ body {
 }
 
 /* ============================================================
+   RWD — 桌機（≥ 960px）：怪獸面板 +200px、玩家圖片加高
+   ============================================================ */
+@media (min-width: 960px) {
+  /* 怪獸面板：768px 時 120px，桌機再 +200px = 320px */
+  .monster-panel  { flex: 0 0 320px; padding: 16px 14px; }
+  .monster-emoji  { font-size: 5rem; }
+  .monster-name   { font-size: 1.2rem; }
+  .monster-dialog { font-size: .88rem; line-height: 1.5; }
+  .monster-panel .char-img { max-width: 240px; }
+
+  /* 玩家圖框高度增加（約 +60px）：加寬 flex-basis 讓圖片等比放大 */
+  .player-char-wrap { flex: 0 0 120px; }
+  .player-char-wrap .char-img { max-width: 110px; }
+  .player-emoji { font-size: 4rem; }
+}
+
+/* ============================================================
    RWD — 小手機（≤ 430px）
    ============================================================ */
 @media (max-width: 430px) {
@@ -474,11 +570,18 @@ body {
 <div class="float-star" style="bottom:18%;right:4%;animation-delay:2.1s">💫</div>
 <div class="float-star" style="bottom:35%;left:6%;animation-delay:4s">🌠</div>
 
+<!-- 全域音效控制（所有畫面固定右上角）-->
+<div class="global-ctrl" id="globalCtrl">
+  <!-- 音效按鈕 -->
+  <button class="ctrl-btn" id="sfxBtn" onclick="toggleSound()" title="音效開關">🔊</button>
+  <!-- 背景音樂按鈕 -->
+  <button class="ctrl-btn" id="bgmBtn" onclick="toggleBGM()" title="背景音樂開關">🎵</button>
+</div>
+
 <!-- 導覽列（對戰時才顯示）-->
 <div class="nav-bar hidden" id="navBar">
   <button class="btn btn-ghost btn-sm" onclick="confirmQuit()">← 離開</button>
   <span class="nav-title">🚀 分數星際大作戰</span>
-  <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
 </div>
 
 <!-- ============================================================
@@ -488,7 +591,12 @@ body {
   <div class="intro-wrap">
     <div class="intro-title">🚀 分數星際大作戰</div>
     <p class="intro-sub">用分數的力量擊退宇宙怪獸！</p>
-    <div class="intro-monster">👾</div>
+    <!-- 宇宙怪物圖片，載入失敗則顯示 emoji fallback -->
+    <div class="intro-monster">
+      <img src="picture/宇宙怪物.png" alt="宇宙怪物" class="intro-monster-img"
+           onerror="this.style.display='none';document.getElementById('introMonsterFallback').style.display='block'">
+      <span id="introMonsterFallback" style="display:none;font-size:5.5rem;animation:pulse 2.5s ease-in-out infinite;display:none">👾</span>
+    </div>
     <div class="hero-dialog">
       🤖 FRAKIO 說：<br>
       「小勇士！亂亂怪入侵了數學星球，<br>
@@ -496,6 +604,34 @@ body {
       請用分數卡牌來對抗它吧！」
     </div>
     <button class="btn btn-primary" onclick="goLevelSelect()">開始冒險 🚀</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: CHAR SELECT（腳色選擇）
+     ============================================================ -->
+<div class="screen" id="screenCharSelect">
+  <div class="char-select-header">選擇你的腳色！</div>
+  <p class="char-select-sub">選擇一個腳色進入冒險！</p>
+  <div class="char-select-grid">
+    <!-- 劍士 -->
+    <div class="char-card" onclick="selectChar('劍士', 'picture/劍士.png')">
+      <img src="picture/劍士.png" alt="劍士" onerror="this.style.display='none'">
+      <div class="char-card-name">劍士</div>
+    </div>
+    <!-- 魔法師 -->
+    <div class="char-card" onclick="selectChar('魔法師', 'picture/魔法師.png')">
+      <img src="picture/魔法師.png" alt="魔法師" onerror="this.style.display='none'">
+      <div class="char-card-name">魔法師</div>
+    </div>
+    <!-- 弓箭手 -->
+    <div class="char-card" onclick="selectChar('弓箭手', 'picture/弓箭手.png')">
+      <img src="picture/弓箭手.png" alt="弓箭手" onerror="this.style.display='none'">
+      <div class="char-card-name">弓箭手</div>
+    </div>
+  </div>
+  <div style="margin-top:24px">
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('screenIntro')">← 返回</button>
   </div>
 </div>
 
@@ -558,7 +694,7 @@ body {
       <div class="level-lbl"  id="levelLbl">加法星球</div>
     </div>
     <div class="hp-side right">
-      <span class="hp-label player">小勇士</span>
+      <span class="hp-label player" id="playerHpLabel">小勇士</span>
       <span class="hp-hearts" id="playerHP"></span>
     </div>
   </div>
@@ -592,7 +728,6 @@ body {
              class="char-img hidden"
              onerror="this.classList.add('hidden'); document.getElementById('playerEmoji').classList.remove('hidden');">
         <div id="playerEmoji" class="player-emoji">🧑‍🚀</div>
-        <div class="player-char-name">小勇士</div>
       </div>
       <!-- 手牌區 -->
       <div class="player-hand-wrap">
@@ -627,17 +762,126 @@ body {
 // ============================================================
 // SOUND（音效模組）
 // ============================================================
+
+/** 音效（答對/答錯短音效）開關 */
 let soundEnabled = true;
 
+/** 背景音樂開關 */
+let bgmEnabled = true;
+
+/** BGM 的 Audio 物件（singleton，避免重複建立）*/
+let bgmAudio = null;
+
+/** 對戰 BGM 的 Audio 物件（singleton）*/
+let battleBgmAudio = null;
+
+/** 結算音效的 Audio 物件（singleton，方便離開畫面時停止）*/
+let resultAudio = null;
+
+/** 切換音效開關 */
 function toggleSound() {
   soundEnabled = !soundEnabled;
-  document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  const btn = document.getElementById('sfxBtn');
+  if (btn) {
+    btn.textContent = soundEnabled ? '🔊' : '🔇';
+    btn.classList.toggle('off', !soundEnabled);
+  }
 }
 
+/** 切換背景音樂開關 */
+function toggleBGM() {
+  bgmEnabled = !bgmEnabled;
+  const btn = document.getElementById('bgmBtn');
+  if (btn) {
+    btn.textContent = bgmEnabled ? '🎵' : '🔕';
+    btn.classList.toggle('off', !bgmEnabled);
+  }
+  const bgmScreens = ['screenIntro', 'screenCharSelect', 'screenLevelSelect'];
+  const cur = document.querySelector('.screen.active')?.id;
+  if (bgmEnabled) {
+    // 依目前畫面決定播哪段 BGM
+    if (bgmScreens.includes(cur))    playBGM();
+    else if (cur === 'screenBattle') playBattleBGM();
+  } else {
+    // 全部停止
+    stopBGM();
+    stopBattleBGM();
+  }
+}
+
+/** 播放背景音樂（若已在播放中則不重啟）*/
+function playBGM() {
+  if (!bgmEnabled) return;
+  if (!bgmAudio) {
+    bgmAudio = new Audio('audio/開場音效.mp3');
+    bgmAudio.loop   = true;
+    bgmAudio.volume = 0.5;
+  }
+  // 只在暫停時才播（避免跨畫面切換時重頭播）
+  if (bgmAudio.paused) {
+    bgmAudio.play().catch(() => {});
+  }
+}
+
+/** 暫停開場 BGM */
+function stopBGM() {
+  if (bgmAudio && !bgmAudio.paused) {
+    bgmAudio.pause();
+  }
+}
+
+/** 播放對戰 BGM */
+function playBattleBGM() {
+  if (!bgmEnabled) return;
+  if (!battleBgmAudio) {
+    battleBgmAudio = new Audio('audio/對戰音效.mp3');
+    battleBgmAudio.loop   = true;
+    battleBgmAudio.volume = 0.5;
+  }
+  if (battleBgmAudio.paused) {
+    battleBgmAudio.play().catch(() => {});
+  }
+}
+
+/** 暫停對戰 BGM */
+function stopBattleBGM() {
+  if (battleBgmAudio && !battleBgmAudio.paused) {
+    battleBgmAudio.pause();
+    battleBgmAudio.currentTime = 0;
+  }
+}
+
+/** 播放結算音效（過關 / 失敗）
+ *  stars > 0 → 過關音效；stars === 0 → 闖關失敗 */
+function playResultSound(stars) {
+  if (!bgmEnabled) return;
+  // 先停止上一次的結算音效（避免重疊）
+  if (resultAudio) {
+    resultAudio.pause();
+    resultAudio.currentTime = 0;
+  }
+  const src = stars > 0 ? 'audio/過關音效.mp3' : 'audio/闖關失敗.mp3';
+  resultAudio = new Audio(src);
+  resultAudio.play().catch(() => {});
+}
+
+/** 停止結算音效 */
+function stopResultSound() {
+  if (resultAudio) {
+    resultAudio.pause();
+    resultAudio.currentTime = 0;
+  }
+}
+
+/** 播放短音效
+ *  type: 'correct' 答對 | 'wrong' 答錯 | 'card' 出牌 */
 function playSound(type) {
   if (!soundEnabled) return;
-  const src = type === 'correct' ? '../4下分數/audio/ok.mp3' : '../4下分數/audio/what.mp3';
-  new Audio(src).play().catch(() => {});
+  let src;
+  if      (type === 'correct') src = '../4下分數/audio/ok.mp3';
+  else if (type === 'wrong')   src = '../4下分數/audio/what.mp3';
+  else if (type === 'card')    src = 'audio/出牌.mp3';
+  if (src) new Audio(src).play().catch(() => {});
 }
 
 // ============================================================
@@ -929,6 +1173,8 @@ const state = {
   lv5Monster:    null,       // 怪獸牌物件
   lv5Slots:      [null, null], // 玩家選的兩張牌 index（加法用兩槽，乘法只用槽0）
   lv5Multiplier: 1,          // 乘法模式的固定整數乘數
+  // 腳色選擇（由 selectChar() 設定）
+  selectedChar:  { name: '勇士', img: '' },
 };
 
 // ============================================================
@@ -969,9 +1215,36 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.getElementById('navBar').classList.toggle('hidden', id !== 'screenBattle');
+
+  // BGM 控制：依畫面切換對應音樂
+  const bgmScreens = ['screenIntro', 'screenCharSelect', 'screenLevelSelect'];
+  if (bgmScreens.includes(id)) {
+    // 開場三畫面：停結算音效、停對戰 BGM，播開場 BGM
+    stopResultSound();
+    stopBattleBGM();
+    playBGM();
+  } else if (id === 'screenBattle') {
+    // 對戰畫面：停結算音效、停開場 BGM，播對戰 BGM
+    stopResultSound();
+    stopBGM();
+    playBattleBGM();
+  } else {
+    // 結算畫面：全停 BGM（結算音效由 playResultSound 另外播）
+    stopBGM();
+    stopBattleBGM();
+  }
 }
 
 function goLevelSelect() {
+  // 開始冒險後先進入腳色選擇
+  showScreen('screenCharSelect');
+}
+
+/** 玩家在腳色選擇畫面點選腳色後呼叫
+ *  name    : 腳色名稱（劍士 / 魔法師 / 弓箭手）
+ *  imgPath : 腳色圖片路徑 */
+function selectChar(name, imgPath) {
+  state.selectedChar = { name, img: imgPath };
   loadStarDisplay();
   showScreen('screenLevelSelect');
 }
@@ -1009,9 +1282,9 @@ function hideFeedback() {
 // MONSTER DIALOG（故事台詞）
 // ============================================================
 const DIALOGS = {
-  start:   ['哈哈！你算得出來嗎？', '來吧！分數讓你頭昏腦脹！', '看看你有沒有本事！', '小鬼頭，別輸得太慘！'],
+  start:   ['哈哈！你算得出來嗎？', '來吧！分數讓你頭昏腦脹！', '看看你有沒有本事！', '準備好了嗎？別讓我失望！'],
   correct: ['不可能！這不科學！', '只是運氣好！', '哼，下次沒那麼幸運！', '不行不行……'],
-  wrong:   ['哈哈！算錯啦！', '果然不行嘛！', '再多練習十年吧！', '笨蛋！笨蛋！'],
+  wrong:   ['哈哈！算錯啦！', '果然還需要練習嘛！', '再多練習幾次吧！', '多買幾本評量練習吧！'],
   win:     ['哈哈哈！數學星球是我的啦！'],
   lose:    ['不可能……這個地球人懂分數！'],
 };
@@ -1064,7 +1337,27 @@ function startBattle(level) {
   state.monsterHP = 5;
   state.correct   = 0;
   state.wrong     = 0;
-  document.getElementById('monsterEmoji').textContent = '👾';
+
+  // 套用怪獸圖片（宇宙怪物）
+  const monsterImg   = document.getElementById('monsterImg');
+  const monsterEmoji = document.getElementById('monsterEmoji');
+  monsterImg.src = 'picture/宇宙怪物.png';
+  monsterImg.classList.remove('hidden');
+  monsterEmoji.classList.add('hidden');
+
+  // 套用玩家所選腳色圖片
+  const playerImg   = document.getElementById('playerImg');
+  const playerEmoji = document.getElementById('playerEmoji');
+  if (state.selectedChar.img) {
+    playerImg.src = state.selectedChar.img;
+    playerImg.classList.remove('hidden');
+    playerEmoji.classList.add('hidden');
+  }
+
+  // 更新右上角 HP 區玩家名稱
+  const hpLabel = document.getElementById('playerHpLabel');
+  if (hpLabel) hpLabel.textContent = state.selectedChar.name;
+
   showScreen('screenBattle');
   updateHP();
   showMonsterDialog('start');
@@ -1620,6 +1913,9 @@ function endBattle() {
 
   saveStars(state.level, stars);
 
+  // 播放結算音效（過關 / 失敗）
+  playResultSound(stars);
+
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultTitle').textContent = title;
   document.getElementById('resultStars').innerHTML = Array.from({ length: 3 },
@@ -1635,6 +1931,15 @@ function endBattle() {
 }
 
 function restartBattle() { startBattle(state.level); }
+
+// ============================================================
+// GLOBAL CLICK SOUND（全域點擊音效）
+// ============================================================
+// 點到可互動元素才播出牌音效（受音效開關控制）
+document.addEventListener('click', e => {
+  const el = e.target.closest('button, .card, .level-card, .char-card, .eq-slot.p-slot, .cmp-btn');
+  if (el) playSound('card');
+});
 
 // ============================================================
 // KEYBOARD SUPPORT（Enter 快速確認）
