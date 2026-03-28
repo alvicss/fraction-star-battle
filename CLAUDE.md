@@ -7,27 +7,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **分數星際大作戰** — 國小四年級學生的分數卡牌對戰遊戲。
 單一 HTML 檔案，無框架、無後端、無建置步驟，直接用瀏覽器開啟即可。
 
+**GitHub Pages：** https://alvicss.github.io/fraction-star-battle/
+
 ## 執行方式
 
-直接用瀏覽器開啟 `cld_fraction-battle.html`，無需任何建置或伺服器。
-音效依賴相對路徑 `../4下分數/audio/ok.mp3` 與 `../4下分數/audio/what.mp3`（不影響遊戲邏輯，只影響音效）。
+直接用瀏覽器開啟 `index.html`，無需任何建置或伺服器。
 
 ## 檔案結構
 
 ```
-cld_fraction-battle.html   # 主遊戲（所有 CSS + HTML + JS 全在一個檔案）
-SPEC.md                    # 功能規格文件（詳細設計說明）
-click-sound-util.js        # 音效輔助工具（目前未整合入主檔）
-fraction-bgm.js            # 背景音樂工具（目前未整合入主檔）
+index.html          # 主遊戲（所有 CSS + HTML + JS 全在一個檔案）
+SPEC.md             # 功能規格文件（詳細設計說明）
+README.md           # 專案說明（GitHub 用）
+audio/              # 所有音效（英文檔名，避免 URL 編碼問題）
+  intro-bgm.mp3
+  battle-bgm.mp3
+  stage-clear.mp3
+  stage-fail.mp3
+  card-play.mp3
+picture/            # 所有圖片（英文檔名）
+  monster.png
+  swordsman.png
+  mage.png
+  archer.png
 ```
+
+> **注意：** 所有 audio/ 與 picture/ 檔名必須使用英文，避免 GitHub Pages URL 編碼問題。
 
 ## 架構說明
 
-### HTML 四個畫面（screen）
+### HTML 五個畫面（screen）
 
 | ID | 說明 |
 |---|---|
-| `screenIntro` | 開場，按鈕進入關卡選擇 |
+| `screenIntro` | 開場，按鈕進入腳色選擇 |
+| `screenCharSelect` | 腳色選擇（劍士 / 魔法師 / 弓箭手）|
 | `screenLevelSelect` | 關卡選擇（5個關卡） |
 | `screenBattle` | 對戰主畫面 |
 | `screenResult` | 結算 |
@@ -38,12 +52,12 @@ fraction-bgm.js            # 背景音樂工具（目前未整合入主檔）
 
 | 區段 | 關鍵函式 |
 |---|---|
-| SOUND | `playSound(type)`, `toggleSound()` |
+| SOUND | `playSound(type)`, `toggleSound()`, `toggleBGM()`, `playBGM()`, `playBattleBGM()`, `playResultSound(stars)` |
 | UTILITY | `gcd`, `reduceFrac`, `toMixed`, `mixedToImproper`, `addFrac`, `subFrac`, `mulFrac` |
 | FRACTION RENDERER | `fracHTML`, `mixedHTML`, `cardDisplayHTML`, `formatAns` |
 | CARD GENERATOR | `genProperCard`, `genImproperCard`, `genMixedCard`, `genIntegerCard`, `genFracCard`, `genPlayerCards`, `genLevel5Cards`, `genLevel5MulCards` |
-| GAME STATE | `const state = { ... }` — 所有執行期狀態 |
-| STORAGE | `saveStars`, `getStars`, `loadStarDisplay`（使用 localStorage key `fractionBattle`）|
+| GAME STATE | `const state = { ... }` — 所有執行期狀態，含 `selectedChar` |
+| STORAGE | `saveStars`, `getStars`, `loadStarDisplay`（localStorage key: `fractionBattle`）|
 | UI CONTROLLER | `showScreen`, `updateHP`, `updateRoundLabel`, `showFeedback` |
 | MONSTER DIALOG | `DIALOGS` 物件 + `showMonsterDialog(type)` |
 | RENDER HANDS | `renderCardInner`, `renderPlayerHand(slotsUsed)` |
@@ -64,49 +78,20 @@ nextRound()
         ↓
   玩家點手牌 → onPlayerCardClick(idx) → 分派到各關卡處理函式
         ↓
-  怪獸牌揭曉（自動，非玩家操作）
+  怪獸牌揭曉（自動）
         ↓
   玩家輸入答案 / 選符號 → check 函式 → 更新 HP → nextRound()
 ```
-
-### 各關卡機制重點
-
-| 關卡 | 說明 |
-|---|---|
-| 1（加法）| 玩家選牌 → 怪獸牌自動出 → `[玩家] + [怪獸] = ?` → 輸入帶分數答案 |
-| 2（減法）| 同上，較大的牌自動放左側 → `[大] - [小] = ?` |
-| 3（乘法）| 玩家有4張分數牌，怪獸出整數牌 → `[分數] × [整數] = ?`；答錯不扣玩家血（鼓勵模式）|
-| 4（比大小）| 玩家先選牌（鎖定），怪獸後出 → 玩家按 `＞` `＝` `＜` 判斷 |
-| 5（雙星）| 怪獸先亮牌；玩家4張牌個別都 < 怪獸；隨機 + 或 × 符號；<br>**+ 模式**：選兩張讓加總 > 怪獸；**× 模式**：選一張假分數乘以固定倍數 `lv5Multiplier`（2~4）讓結果 > 怪獸 |
 
 ### 答案驗證（關卡1/2/3）
 
 允許等值約分，禁止假分數作答：
 
 ```javascript
-const userTotal   = w * d + n;          // 使用者輸入轉假分數分子
-const ansTotal    = ans.whole * ans.d + ans.n;
-const sameValue   = (userTotal * ans.d === ansTotal * d);  // 交叉相乘避免浮點誤差
+const sameValue   = (userTotal * ans.d === ansTotal * d);
 const hasImproper = (n > 0 && n >= d);
 const isCorrect   = sameValue && !hasImproper;
 ```
-
-### 同分母保證
-
-關卡1/2/3的加減法 `addFrac`/`subFrac` 假設 `f1.d === f2.d`（同局分母相同）。
-`addFrac(f1, f2)` = `reduceFrac(f1.n + f2.n, f1.d)`，不做通分。
-
-### CSS 佈局
-
-對戰畫面採橫向三欄：
-```
-battle-top（血量列）
-battle-mid:
-  monster-panel（左，固定寬 90px）| battle-center（中，flex:1，動態填入題目）
-battle-bottom（玩家手牌，橫向排列）
-```
-
-`#battleCenter` 的內容由各 `setupXxxUI()` 動態生成，不同關卡結構不同。
 
 ### localStorage 格式
 
@@ -114,4 +99,8 @@ battle-bottom（玩家手牌，橫向排列）
 { "lv1": 3, "lv2": 2, "lv3": 0, "lv4": 1, "lv5": 0 }
 ```
 
-值 0~3 代表星星數，只在突破最高紀錄時更新。
+## GitHub Pages 注意事項
+
+- 所有資源檔名必須使用**英文**（無中文、無空格）
+- 主入口為 `index.html`（GitHub Pages 預設）
+- 部署分支：`master`，目錄：根目錄（`/`）

@@ -593,7 +593,7 @@ body {
     <p class="intro-sub">用分數的力量擊退宇宙怪獸！</p>
     <!-- 宇宙怪物圖片，載入失敗則顯示 emoji fallback -->
     <div class="intro-monster">
-      <img src="picture/宇宙怪物.png" alt="宇宙怪物" class="intro-monster-img"
+      <img src="picture/monster.png" alt="宇宙怪物" class="intro-monster-img"
            onerror="this.style.display='none';document.getElementById('introMonsterFallback').style.display='block'">
       <span id="introMonsterFallback" style="display:none;font-size:5.5rem;animation:pulse 2.5s ease-in-out infinite;display:none">👾</span>
     </div>
@@ -615,18 +615,18 @@ body {
   <p class="char-select-sub">選擇一個腳色進入冒險！</p>
   <div class="char-select-grid">
     <!-- 劍士 -->
-    <div class="char-card" onclick="selectChar('劍士', 'picture/劍士.png')">
-      <img src="picture/劍士.png" alt="劍士" onerror="this.style.display='none'">
+    <div class="char-card" onclick="selectChar('劍士', 'picture/swordsman.png')">
+      <img src="picture/swordsman.png" alt="劍士" onerror="this.style.display='none'">
       <div class="char-card-name">劍士</div>
     </div>
     <!-- 魔法師 -->
-    <div class="char-card" onclick="selectChar('魔法師', 'picture/魔法師.png')">
-      <img src="picture/魔法師.png" alt="魔法師" onerror="this.style.display='none'">
+    <div class="char-card" onclick="selectChar('魔法師', 'picture/mage.png')">
+      <img src="picture/mage.png" alt="魔法師" onerror="this.style.display='none'">
       <div class="char-card-name">魔法師</div>
     </div>
     <!-- 弓箭手 -->
-    <div class="char-card" onclick="selectChar('弓箭手', 'picture/弓箭手.png')">
-      <img src="picture/弓箭手.png" alt="弓箭手" onerror="this.style.display='none'">
+    <div class="char-card" onclick="selectChar('弓箭手', 'picture/archer.png')">
+      <img src="picture/archer.png" alt="弓箭手" onerror="this.style.display='none'">
       <div class="char-card-name">弓箭手</div>
     </div>
   </div>
@@ -813,7 +813,7 @@ function toggleBGM() {
 function playBGM() {
   if (!bgmEnabled) return;
   if (!bgmAudio) {
-    bgmAudio = new Audio('audio/開場音效.mp3');
+    bgmAudio = new Audio('audio/intro-bgm.mp3');
     bgmAudio.loop   = true;
     bgmAudio.volume = 0.5;
   }
@@ -834,7 +834,7 @@ function stopBGM() {
 function playBattleBGM() {
   if (!bgmEnabled) return;
   if (!battleBgmAudio) {
-    battleBgmAudio = new Audio('audio/對戰音效.mp3');
+    battleBgmAudio = new Audio('audio/battle-bgm.mp3');
     battleBgmAudio.loop   = true;
     battleBgmAudio.volume = 0.5;
   }
@@ -860,7 +860,7 @@ function playResultSound(stars) {
     resultAudio.pause();
     resultAudio.currentTime = 0;
   }
-  const src = stars > 0 ? 'audio/過關音效.mp3' : 'audio/闖關失敗.mp3';
+  const src = stars > 0 ? 'audio/stage-clear.mp3' : 'audio/stage-fail.mp3';
   resultAudio = new Audio(src);
   resultAudio.play().catch(() => {});
 }
@@ -878,9 +878,9 @@ function stopResultSound() {
 function playSound(type) {
   if (!soundEnabled) return;
   let src;
-  if      (type === 'correct') src = '../4下分數/audio/ok.mp3';
-  else if (type === 'wrong')   src = '../4下分數/audio/what.mp3';
-  else if (type === 'card')    src = 'audio/出牌.mp3';
+  if      (type === 'correct') src = 'audio/stage-clear.mp3';
+  else if (type === 'wrong')   src = 'audio/stage-fail.mp3';
+  else if (type === 'card')    src = 'audio/card-play.mp3';
   if (src) new Audio(src).play().catch(() => {});
 }
 
@@ -1341,7 +1341,7 @@ function startBattle(level) {
   // 套用怪獸圖片（宇宙怪物）
   const monsterImg   = document.getElementById('monsterImg');
   const monsterEmoji = document.getElementById('monsterEmoji');
-  monsterImg.src = 'picture/宇宙怪物.png';
+  monsterImg.src = 'picture/monster.png';
   monsterImg.classList.remove('hidden');
   monsterEmoji.classList.add('hidden');
 
