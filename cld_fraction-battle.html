@@ -197,16 +197,16 @@ body {
 }
 
 /* 題目標籤 */
-.q-label { font-size: .68rem; font-weight: 800; color: #8fa8c8; text-transform: uppercase; letter-spacing: 1px; }
+.q-label { font-size: .68rem; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; }
 
 /* 等式列 */
 .equation-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.q-op   { color: var(--orange); font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
-.q-eq   { color: #8fa8c8;       font-family:'Fredoka One',cursive; font-size: 1.3rem;  flex-shrink: 0; }
-.q-ineq { color: var(--accent);  font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
-.q-cmp  { color: var(--accent);  font-family:'Fredoka One',cursive; font-size: 1.9rem;  min-width: 30px; text-align: center; flex-shrink: 0; }
+.q-op   { color: #ffffff; font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
+.q-eq   { color: #ffffff; font-family:'Fredoka One',cursive; font-size: 1.3rem;  flex-shrink: 0; }
+.q-ineq { color: #ffffff; font-family:'Fredoka One',cursive; font-size: 1.55rem; flex-shrink: 0; }
+.q-cmp  { color: #ffffff; font-family:'Fredoka One',cursive; font-size: 1.9rem;  min-width: 30px; text-align: center; flex-shrink: 0; }
 
 /* 槽位（等式中的卡牌格子）*/
 .eq-slot {
@@ -287,6 +287,29 @@ body {
   background: rgba(78,205,196,.06); border-top: 1px solid rgba(78,205,196,.14);
   padding: 9px 14px; flex-shrink: 0;
 }
+
+/* 玩家底部列：角色圖 + 手牌並排 */
+.player-bottom-row {
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* 玩家角色圖片欄 */
+.player-char-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 0 0 56px; gap: 2px;
+}
+.player-emoji      { font-size: 2rem; line-height: 1; }
+.player-char-name  { font-size: .55rem; font-weight: 800; color: var(--player-clr); text-transform: uppercase; letter-spacing: .5px; }
+
+/* 手牌欄（填滿剩餘寬度）*/
+.player-hand-wrap { flex: 1; min-width: 0; }
+
+/* 通用角色圖片樣式 */
+.char-img {
+  width: 100%; max-width: 52px; height: auto;
+  border-radius: 8px; object-fit: contain;
+}
+
 .hand-label  { font-size: .68rem; font-weight: 800; color: var(--player-clr); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
 .player-hand { display: flex; gap: 7px; justify-content: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; }
 
@@ -349,7 +372,72 @@ body {
 .result-msg       { color: #8fa8c8; font-size: .9rem; margin-bottom: 22px; line-height: 1.55; white-space: pre-line; }
 
 /* ============================================================
-   RWD
+   RWD — 平板 / 電腦版（≥ 768px）
+   ============================================================ */
+@media (min-width: 768px) {
+  /* 中央題目區：放大置中，填滿剩餘空間 */
+  .battle-center {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* 題目標籤放大 */
+  .q-label { font-size: .88rem; letter-spacing: 1.5px; }
+
+  /* 等式符號放大 */
+  .q-op   { font-size: 2.4rem; }
+  .q-eq   { font-size: 2rem; }
+  .q-ineq { font-size: 2.4rem; }
+  .q-cmp  { font-size: 2.8rem; min-width: 48px; }
+
+  /* 卡牌槽位放大 */
+  .eq-slot        { min-width: 110px; min-height: 136px; }
+  .eq-slot .frac  { font-size: 1.7rem; }
+  .eq-slot .frac-line { min-width: 32px; height: 4px; }
+  .eq-slot .whole-part { font-size: 1.9rem; }
+
+  /* 答案輸入框放大 */
+  .ans-input-w, .ans-input-n, .ans-input-d {
+    width: 72px; height: 68px; font-size: 1.5rem;
+  }
+  .ans-divider { width: 72px; }
+
+  /* 比大小按鈕放大 */
+  .cmp-btn { width: 76px; height: 76px; font-size: 2rem; }
+
+  /* 按鈕列間距加大 */
+  .btn-row { gap: 12px; }
+
+  /* 怪獸面板稍微拉寬 */
+  .monster-panel { flex: 0 0 120px; }
+  .monster-emoji { font-size: 3rem; }
+  .monster-name  { font-size: 1rem; }
+  .monster-dialog { font-size: .78rem; }
+
+  /* 手牌卡片放大 */
+  .card { min-width: 88px; min-height: 110px; }
+
+  /* 底部手牌區增加角色圖區域後的間距 */
+  .battle-bottom { padding: 14px 24px; }
+  .hand-label    { font-size: .82rem; margin-bottom: 10px; }
+  .player-hand   { gap: 12px; }
+
+  /* 等式列間距加大 */
+  .equation-row  { gap: 14px; }
+
+  /* 平板版角色圖放大 */
+  .player-char-wrap { flex: 0 0 80px; gap: 4px; }
+  .player-emoji     { font-size: 2.8rem; }
+  .player-char-name { font-size: .65rem; }
+  .char-img         { max-width: 76px; }
+
+  /* 怪獸面板角色圖 */
+  .monster-panel .char-img { max-width: 80px; }
+}
+
+/* ============================================================
+   RWD — 小手機（≤ 430px）
    ============================================================ */
 @media (max-width: 430px) {
   .monster-panel { flex: 0 0 76px; }
@@ -480,6 +568,10 @@ body {
 
     <!-- 左側怪獸面板 -->
     <div class="monster-panel">
+      <!-- 怪獸角色圖片（預留，之後替換 src）-->
+      <img id="monsterImg" src="" alt="亂亂怪"
+           class="char-img hidden"
+           onerror="this.classList.add('hidden'); document.getElementById('monsterEmoji').classList.remove('hidden');">
       <div class="monster-emoji" id="monsterEmoji">👾</div>
       <div class="monster-name">亂亂怪</div>
       <div class="monster-dialog" id="monsterDialog">哈哈！你算得出來嗎？</div>
@@ -492,8 +584,22 @@ body {
 
   <!-- 底部玩家手牌 -->
   <div class="battle-bottom">
-    <div class="hand-label">🃏 你的手牌</div>
-    <div class="player-hand" id="playerHand"></div>
+    <!-- 玩家角色圖片列（圖片在左，手牌在右）-->
+    <div class="player-bottom-row">
+      <!-- 玩家角色圖片（預留，之後替換 src）-->
+      <div class="player-char-wrap">
+        <img id="playerImg" src="" alt="小勇士"
+             class="char-img hidden"
+             onerror="this.classList.add('hidden'); document.getElementById('playerEmoji').classList.remove('hidden');">
+        <div id="playerEmoji" class="player-emoji">🧑‍🚀</div>
+        <div class="player-char-name">小勇士</div>
+      </div>
+      <!-- 手牌區 -->
+      <div class="player-hand-wrap">
+        <div class="hand-label">🃏 你的手牌</div>
+        <div class="player-hand" id="playerHand"></div>
+      </div>
+    </div>
   </div>
 
 </div>
