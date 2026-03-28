@@ -230,14 +230,14 @@ body {
 .eq-slot.p-slot.locked {
   cursor: default;
   border-style: solid; border-color: var(--player-clr);
-  background: rgba(78,205,196,.05);
+  background: var(--card-bg);  /* 填入後改白底，跟手牌一致 */
 }
 /* 怪獸牌槽 */
 .eq-slot.m-slot {
   background: rgba(255,107,157,.07);
   border: 2px dashed rgba(255,107,157,.3);
 }
-.eq-slot.m-slot.filled { border-style: solid; border-color: #ffc0d4; }
+.eq-slot.m-slot.filled { border-style: solid; border-color: #ffc0d4; background: var(--card-bg); /* 填入後改白底，跟手牌一致 */ }
 .slot-hint { font-size: .7rem; color: #8fa8c8; font-weight: 700; text-align: center; }
 
 /* 答案輸入（行內，接在等號後）*/
