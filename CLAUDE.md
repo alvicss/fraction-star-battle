@@ -41,7 +41,7 @@ fraction-bgm.js            # 背景音樂工具（目前未整合入主檔）
 | SOUND | `playSound(type)`, `toggleSound()` |
 | UTILITY | `gcd`, `reduceFrac`, `toMixed`, `mixedToImproper`, `addFrac`, `subFrac`, `mulFrac` |
 | FRACTION RENDERER | `fracHTML`, `mixedHTML`, `cardDisplayHTML`, `formatAns` |
-| CARD GENERATOR | `genProperCard`, `genImproperCard`, `genMixedCard`, `genIntegerCard`, `genFracCard`, `genPlayerCards`, `genLevel5Cards` |
+| CARD GENERATOR | `genProperCard`, `genImproperCard`, `genMixedCard`, `genIntegerCard`, `genFracCard`, `genPlayerCards`, `genLevel5Cards`, `genLevel5MulCards` |
 | GAME STATE | `const state = { ... }` — 所有執行期狀態 |
 | STORAGE | `saveStars`, `getStars`, `loadStarDisplay`（使用 localStorage key `fractionBattle`）|
 | UI CONTROLLER | `showScreen`, `updateHP`, `updateRoundLabel`, `showFeedback` |
@@ -50,7 +50,7 @@ fraction-bgm.js            # 背景音樂工具（目前未整合入主檔）
 | BATTLE FLOW | `startBattle(level)`, `nextRound()`, `onPlayerCardClick(idx)` |
 | 關卡 1/2/3 | `setupCalcUI`, `onCalcCardPick`, `checkCalcAnswer`, `showCalcHint` |
 | 關卡 4 | `setupLevel4UI`, `onLevel4CardPick`, `checkLevel4(sym)` |
-| 關卡 5 | `setupLevel5UI`, `onLevel5CardClick`, `refreshLv5Slot`, `checkLevel5` |
+| 關卡 5 | `setupLevel5UI`, `onLevel5CardClick`, `onLv5SlotClear`, `refreshLv5Slot`, `checkLevel5` |
 | END BATTLE | `endBattle`, `restartBattle` |
 
 ### 遊戲流程（每局）
@@ -77,7 +77,7 @@ nextRound()
 | 2（減法）| 同上，較大的牌自動放左側 → `[大] - [小] = ?` |
 | 3（乘法）| 玩家有4張分數牌，怪獸出整數牌 → `[分數] × [整數] = ?`；答錯不扣玩家血（鼓勵模式）|
 | 4（比大小）| 玩家先選牌（鎖定），怪獸後出 → 玩家按 `＞` `＝` `＜` 判斷 |
-| 5（雙星）| 怪獸先亮牌；玩家4張牌個別都 < 怪獸；隨機 + 或 × 符號；選兩張讓結果 > 怪獸 |
+| 5（雙星）| 怪獸先亮牌；玩家4張牌個別都 < 怪獸；隨機 + 或 × 符號；<br>**+ 模式**：選兩張讓加總 > 怪獸；**× 模式**：選一張假分數乘以固定倍數 `lv5Multiplier`（2~4）讓結果 > 怪獸 |
 
 ### 答案驗證（關卡1/2/3）
 

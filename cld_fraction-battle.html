@@ -314,7 +314,7 @@ body {
 .player-hand { display: flex; gap: 7px; justify-content: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; }
 
 /* ============================================================
-   卡牌
+   卡牌7568
    ============================================================ */
 .card {
   background: var(--card-bg); border: 2.5px solid #dde5f0;
@@ -816,6 +816,84 @@ function genLevel5Cards(op) {
   return { monsterCard, playerCards };
 }
 
+/** 生成乘法模式的雙星挑戰牌組（× 模式）
+ *
+ *  設計原則：
+ *  - 玩家4張牌全部使用「同一個分母 pd」，方便學生比較大小
+ *  - 牌型為真分數或假分數（不給帶分數），避免一眼看出正解
+ *  - 正解恰好1張（假分數，值 > threshold），其餘3張為錯誤牌（值 ≤ threshold）
+ *  - 錯誤牌可能包含假分數干擾項，逼學生換算而非只靠牌型判斷
+ *  - 怪獸牌仍為帶分數（作為目標值）*/
+function genLevel5MulCards() {
+  let monsterCard, playerCards = [], multiplier, tries = 0;
+
+  do {
+    playerCards = [];  // 每次重置
+    // 怪獸牌：帶分數
+    const md = randInt(2, 5);
+    const mw = randInt(1, 3);
+    const mn = randCoprime(md);
+    monsterCard = { type: 'mixed', whole: mw, n: mn, d: md, value: mw + mn / md };
+
+    const mV = monsterCard.value;
+    multiplier = randInt(2, 4);
+
+    // 正解牌需 value > threshold（= mV / N）才能 card × N > 怪獸
+    const threshold = mV / multiplier;
+    if (threshold >= mV - 0.15) { tries++; continue; }
+
+    // 隨機選一個分母 pd（所有玩家牌共用）
+    const pd = randInt(2, 6);
+
+    // ── 找正解牌：假分數（n > pd），threshold < n/pd < mV，互質 ──
+    const winNMin = Math.max(pd + 1, Math.floor(threshold * pd) + 1);
+    const winNMax = Math.ceil(mV * pd) - 1;
+    const winCands = [];
+    for (let n = winNMin; n <= winNMax; n++) {
+      if (gcd(n, pd) === 1) winCands.push(n);
+    }
+    if (winCands.length === 0) { tries++; continue; }
+
+    const winN = winCands[randInt(0, winCands.length - 1)];
+    const winCard = { type: 'improper', whole: 0, n: winN, d: pd, value: winN / pd };
+
+    // ── 找3張錯誤牌：n/pd ≤ threshold，n ≠ winN，互質 ──
+    // 可以是真分數（n < pd）或假分數干擾牌（pd < n ≤ threshold*pd）
+    const lossNMax = Math.floor(threshold * pd);
+    const lossCands = [];
+    for (let n = 1; n <= lossNMax; n++) {
+      if (gcd(n, pd) === 1 && n !== winN) lossCands.push(n);
+    }
+    if (lossCands.length < 3) { tries++; continue; }
+
+    // 從候選清單隨機取3張不重複
+    const pool = [...lossCands];
+    const chosenN = [];
+    while (chosenN.length < 3 && pool.length > 0) {
+      const idx = randInt(0, pool.length - 1);
+      chosenN.push(pool.splice(idx, 1)[0]);
+    }
+    if (chosenN.length < 3) { tries++; continue; }
+
+    playerCards = [winCard];
+    for (const n of chosenN) {
+      // n > pd → 假分數干擾牌，n < pd → 真分數
+      const type = n > pd ? 'improper' : 'proper';
+      playerCards.push({ type, whole: 0, n, d: pd, value: n / pd });
+    }
+
+    tries++;
+  } while (playerCards.length < 4 && tries < 200);
+
+  // 洗牌（Fisher-Yates），讓正解牌出現在隨機位置
+  for (let i = playerCards.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [playerCards[i], playerCards[j]] = [playerCards[j], playerCards[i]];
+  }
+
+  return { monsterCard, playerCards, multiplier };
+}
+
 /** 驗證第5關：是否存在至少一對玩家牌的計算結果 > 怪獸值 */
 function validateLv5(pCards, mCard, op) {
   const mV = mCard.value;
@@ -847,9 +925,10 @@ const state = {
   currentAns:        null,   // 正確答案 {whole, n, d}
   phase:             'pick', // 'pick' | 'answer' | 'done'
   // 第5關
-  lv5Op:      '+',           // '+' | '*'
-  lv5Monster: null,          // 怪獸牌物件
-  lv5Slots:   [null, null],  // 玩家選的兩張牌 index
+  lv5Op:         '+',        // '+' | '*'
+  lv5Monster:    null,       // 怪獸牌物件
+  lv5Slots:      [null, null], // 玩家選的兩張牌 index（加法用兩槽，乘法只用槽0）
+  lv5Multiplier: 1,          // 乘法模式的固定整數乘數
 };
 
 // ============================================================
@@ -1316,35 +1395,68 @@ function checkLevel4(sym) {
 
 /** 建立雙星挑戰 UI（怪獸先亮牌）*/
 function setupLevel5UI() {
-  state.lv5Op = Math.random() < 0.5 ? '+' : '*';
-  const opSym = state.lv5Op === '+' ? '＋' : '×';
+  state.lv5Op    = Math.random() < 0.5 ? '+' : '*';
+  state.lv5Slots = [null, null];
 
-  const { monsterCard, playerCards } = genLevel5Cards(state.lv5Op);
-  state.lv5Monster  = monsterCard;
-  state.playerCards = playerCards;
-  state.lv5Slots    = [null, null];
+  if (state.lv5Op === '*') {
+    // ── 乘法模式：玩家選唯一1張分數牌 × 整數乘數 > 怪獸 ──
+    const { monsterCard, playerCards, multiplier } = genLevel5MulCards();
+    state.lv5Monster     = monsterCard;
+    state.playerCards    = playerCards;
+    state.lv5Multiplier  = multiplier;
 
-  document.getElementById('battleCenter').innerHTML = `
-    <div class="q-label">亂亂怪先出牌！選兩張讓計算結果大於對手！（每張牌都比對手小，要靠計算！）</div>
-    <div class="equation-row" id="eqRow">
-      <div class="eq-slot p-slot" id="lv5S0" onclick="onLv5SlotClear(0)">
-        <span class="slot-hint">選牌①</span>
+    // 整數乘數顯示為一張固定的卡（帶「整數」標籤）
+    const mulCard = { type: 'integer', whole: multiplier, n: 0, d: 1, value: multiplier };
+
+    document.getElementById('battleCenter').innerHTML = `
+      <div class="q-label">亂亂怪先出牌！選一張分數牌，乘以整數後要大於對手！（4張中只有1張是正解！）</div>
+      <div class="equation-row" id="eqRow">
+        <div class="eq-slot p-slot" id="lv5S0" onclick="onLv5SlotClear(0)">
+          <span class="slot-hint">選牌</span>
+        </div>
+        <span class="q-op">×</span>
+        <div class="eq-slot m-slot filled">
+          ${renderCardInner(mulCard)}
+        </div>
+        <span class="q-ineq">＞</span>
+        <div class="eq-slot m-slot filled" id="lv5M">
+          ${renderCardInner(monsterCard)}
+        </div>
       </div>
-      <span class="q-op">${opSym}</span>
-      <div class="eq-slot p-slot" id="lv5S1" onclick="onLv5SlotClear(1)">
-        <span class="slot-hint">選牌②</span>
+      <div class="btn-row">
+        <button class="btn btn-primary hidden" id="checkBtn" onclick="checkLevel5()">確認 ✓</button>
+        <button class="btn btn-gold    hidden" id="nextBtn"  onclick="nextRound()">下一局 →</button>
       </div>
-      <span class="q-ineq">＞</span>
-      <div class="eq-slot m-slot filled" id="lv5M">
-        ${renderCardInner(monsterCard)}
+      <div class="feedback-box hidden" id="feedbackBox"></div>
+    `;
+  } else {
+    // ── 加法模式：玩家選兩張，相加 > 怪獸 ──
+    const { monsterCard, playerCards } = genLevel5Cards(state.lv5Op);
+    state.lv5Monster  = monsterCard;
+    state.playerCards = playerCards;
+
+    document.getElementById('battleCenter').innerHTML = `
+      <div class="q-label">亂亂怪先出牌！選兩張讓計算結果大於對手！（每張牌都比對手小，要靠計算！）</div>
+      <div class="equation-row" id="eqRow">
+        <div class="eq-slot p-slot" id="lv5S0" onclick="onLv5SlotClear(0)">
+          <span class="slot-hint">選牌①</span>
+        </div>
+        <span class="q-op">＋</span>
+        <div class="eq-slot p-slot" id="lv5S1" onclick="onLv5SlotClear(1)">
+          <span class="slot-hint">選牌②</span>
+        </div>
+        <span class="q-ineq">＞</span>
+        <div class="eq-slot m-slot filled" id="lv5M">
+          ${renderCardInner(monsterCard)}
+        </div>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary hidden" id="checkBtn" onclick="checkLevel5()">確認 ✓</button>
-      <button class="btn btn-gold    hidden" id="nextBtn"  onclick="nextRound()">下一局 →</button>
-    </div>
-    <div class="feedback-box hidden" id="feedbackBox"></div>
-  `;
+      <div class="btn-row">
+        <button class="btn btn-primary hidden" id="checkBtn" onclick="checkLevel5()">確認 ✓</button>
+        <button class="btn btn-gold    hidden" id="nextBtn"  onclick="nextRound()">下一局 →</button>
+      </div>
+      <div class="feedback-box hidden" id="feedbackBox"></div>
+    `;
+  }
 }
 
 /** 點擊已填槽位 → 清除（取消選牌）*/
@@ -1360,6 +1472,25 @@ function onLv5SlotClear(slotIdx) {
 function onLevel5CardClick(idx) {
   if (state.phase !== 'pick') return;
 
+  if (state.lv5Op === '*') {
+    // ── 乘法模式：只選1張（槽0）──
+    if (state.lv5Slots[0] === idx) {
+      // 再次點同張 → 取消
+      state.lv5Slots[0] = null;
+      refreshLv5Slot(0);
+      document.getElementById('checkBtn')?.classList.add('hidden');
+      renderPlayerHand(new Set());
+    } else {
+      // 選新的牌（覆蓋原槽0）
+      state.lv5Slots[0] = idx;
+      refreshLv5Slot(0);
+      renderPlayerHand(new Set([idx]));
+      document.getElementById('checkBtn')?.classList.remove('hidden');
+    }
+    return;
+  }
+
+  // ── 加法模式：選兩張 ──
   // 若牌已在某槽中，點擊則移除
   const existSlot = state.lv5Slots.findIndex(s => s === idx);
   if (existSlot >= 0) {
@@ -1397,7 +1528,9 @@ function refreshLv5Slot(slotIdx) {
   const cardIdx = state.lv5Slots[slotIdx];
   if (!slot) return;
   if (cardIdx === null) {
-    slot.innerHTML = `<span class="slot-hint">選牌${slotIdx === 0 ? '①' : '②'}</span>`;
+    // 乘法模式只有一個槽（槽0），加法模式有兩個槽
+    const hint = (state.lv5Op === '*') ? '選牌' : (slotIdx === 0 ? '選牌①' : '選牌②');
+    slot.innerHTML = `<span class="slot-hint">${hint}</span>`;
     slot.classList.remove('locked');
   } else {
     slot.innerHTML = renderCardInner(state.playerCards[cardIdx]);
@@ -1407,20 +1540,30 @@ function refreshLv5Slot(slotIdx) {
 
 /** 確認第5關答案 */
 function checkLevel5() {
-  if (state.lv5Slots[0] === null || state.lv5Slots[1] === null) return;
-
-  const c0 = state.playerCards[state.lv5Slots[0]];
-  const c1 = state.playerCards[state.lv5Slots[1]];
   const mV = cardValue(state.lv5Monster);
+  let pV, correctMsg, wrongMsg;
 
-  // 計算玩家結果（乘法用假分數避免浮點誤差）
-  let pV;
-  if (state.lv5Op === '+') {
-    pV = cardValue(c0) + cardValue(c1);
-  } else {
+  if (state.lv5Op === '*') {
+    // ── 乘法模式：只看槽0（玩家選的單張牌 × 整數乘數）──
+    if (state.lv5Slots[0] === null) return;
+
+    const c0 = state.playerCards[state.lv5Slots[0]];
+    // 用假分數避免浮點誤差：(分子 × 整數) / 分母
     const f0 = mixedToImproper(c0.whole, c0.n, c0.d);
-    const f1 = mixedToImproper(c1.whole, c1.n, c1.d);
-    pV = (f0.n * f1.n) / (f0.d * f1.d);
+    pV = (f0.n * state.lv5Multiplier) / f0.d;
+
+    correctMsg = `🎉 答對了！這張牌乘以 ${state.lv5Multiplier} 後成功超越對手！`;
+    wrongMsg   = `😅 這張牌乘起來還不夠大！換一張試試！`;
+  } else {
+    // ── 加法模式：兩槽都要有牌 ──
+    if (state.lv5Slots[0] === null || state.lv5Slots[1] === null) return;
+
+    const c0 = state.playerCards[state.lv5Slots[0]];
+    const c1 = state.playerCards[state.lv5Slots[1]];
+    pV = cardValue(c0) + cardValue(c1);
+
+    correctMsg = `🎉 答對了！這兩張牌合力超越了對手！`;
+    wrongMsg   = `😅 這組合算出來還不夠大！試試換別的兩張！`;
   }
 
   const pass = pV > mV + 0.001;
@@ -1432,7 +1575,7 @@ function checkLevel5() {
     document.getElementById('monsterEmoji').textContent = '😱';
     showMonsterDialog('correct');
     playSound('correct');
-    showFeedback('correct', `🎉 答對了！這兩張牌合力超越了對手！`);
+    showFeedback('correct', correctMsg);
     document.getElementById('checkBtn')?.classList.add('hidden');
     document.getElementById('nextBtn')?.classList.remove('hidden');
     state.phase = 'done';
@@ -1443,11 +1586,11 @@ function checkLevel5() {
     document.getElementById('monsterEmoji').textContent = '😈';
     showMonsterDialog('wrong');
     playSound('wrong');
-    showFeedback('wrong', `😅 這組合算出來還不夠大！試試換別的兩張！`);
+    showFeedback('wrong', wrongMsg);
     // 清空槽讓玩家重試
     state.lv5Slots = [null, null];
     refreshLv5Slot(0);
-    refreshLv5Slot(1);
+    if (state.lv5Op === '+') refreshLv5Slot(1);
     renderPlayerHand();
     document.getElementById('checkBtn')?.classList.add('hidden');
   }
