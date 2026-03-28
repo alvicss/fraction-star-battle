@@ -1986,6 +1986,13 @@ function createStarBg() {
 // ============================================================
 createStarBg();
 loadStarDisplay();
+
+// 瀏覽器自動播放政策：必須等使用者第一次互動才能播音訊
+// 監聽全頁第一次點擊，啟動首頁 BGM（只觸發一次）
+document.addEventListener('click', function startIntroBGM() {
+  playBGM();
+  document.removeEventListener('click', startIntroBGM);
+}, { once: true });
 </script>
 </body>
 </html>
