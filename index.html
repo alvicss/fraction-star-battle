@@ -1048,8 +1048,13 @@ function genLevel5Cards(op) {
     for (let i = 0; i < 4 && innerFail < 120; i++) {
       let c, ct = 0;
       do {
-        // 玩家牌：真分數或帶分數（同分母）
-        c = [genProperCard, genMixedCard][randInt(0, 1)](md);
+        // 玩家牌：真分數、假分數、帶分數三種均可
+        // 但最多只允許 1 張帶分數，避免兩張帶分數讓正解一眼看穿
+        const mixedCount = playerCards.filter(x => x.type === 'mixed').length;
+        const generators = mixedCount >= 1
+          ? [genProperCard, genImproperCard]          // 已有帶分數 → 只出真/假分數
+          : [genProperCard, genImproperCard, genMixedCard]; // 三種均可
+        c = generators[randInt(0, generators.length - 1)](md);
         ct++;
       } while ((c.value >= mV || playerCards.some(x => Math.abs(x.value - c.value) < 0.001)) && ct < 60);
 
@@ -1089,8 +1094,8 @@ function genLevel5MulCards() {
     const threshold = mV / multiplier;
     if (threshold >= mV - 0.15) { tries++; continue; }
 
-    // 隨機選一個分母 pd（所有玩家牌共用）
-    const pd = randInt(2, 6);
+    // 玩家牌分母與怪獸牌相同，避免學生遇到不同分母的比較
+    const pd = md;
 
     // ── 找正解牌：假分數（n > pd），threshold < n/pd < mV，互質 ──
     const winNMin = Math.max(pd + 1, Math.floor(threshold * pd) + 1);

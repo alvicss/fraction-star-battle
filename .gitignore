@@ -1,5 +1,6 @@
-# Claude Code 設定目錄
+# Claude Code 設定目錄與說明檔
 .claude/
+CLAUDE.md
 
 # 作業系統產生的暫存檔
 .DS_Store
